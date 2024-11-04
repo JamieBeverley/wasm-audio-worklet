@@ -9,8 +9,10 @@
     "public/"
   ],
   "scripts": {
-    "build-wasm": "cd rust-wasm && wasm-pack build --target web",
-    "build": "vite build && npm run build-demo",
+    "build-wasm-old": "cd rust-wasm && wasm-pack build --target web",
+    "build-wasm": "cd rust-wasm && cargo build --target wasm32-unknown-unknown",
+    "install-wasm": "cp rust-wasm/target/wasm32-unknown-unknown/debug/rust_wasm.wasm ./public/rust_wasm_bg.wasm",
+    "build": "npm run build-wasm && npm run install-wasm && vite build && npm run build-demo",
     "build-demo": "cd demo && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

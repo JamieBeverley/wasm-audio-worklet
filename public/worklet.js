@@ -12,8 +12,8 @@ class WasmProcessor extends AudioWorkletProcessor {
         if (data.type === 'init-wasm') {
             const instance = async () => {
                 try {
-                    this._wasm = await WebAssembly.instantiate(data.wasmBytes, {});
-                    console.log(this._wasm);
+                    this._wasm = (await WebAssembly.instantiate(data.wasmBytes, {})).instance.exports;
+                    console.log(JSON.stringify(this._wasm));
                 } catch(e) {
                     console.log("Caught error in instantiating wasm", e);
                 }

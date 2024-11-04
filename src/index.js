@@ -43,11 +43,8 @@ const _initNode = async (thing) => {
 }
 
 const initNode = async (context) => {
-    // const x = new URL("./rust-wasm/pkg/rust_wasm_bg.wasm", import.meta.url)
     const response = await window.fetch(WASM_PATH);
-    // const wasmBytes = await WebAssembly.compileStreaming(response);
     const wasmBytes = await response.arrayBuffer();
-    console.log(response, wasmBytes)
 
     // Add our audio processor worklet to the context.
     try {
