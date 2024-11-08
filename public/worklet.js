@@ -49,7 +49,7 @@ class WasmProcessor extends AudioWorkletProcessor {
         if (this._wasm === null) return true;
 
         // 1. Copy input data to t`this._inPtr`
-        this._inBuf.set(inputs[0]) // array index may not be correct
+        this._inBuf.set(inputs[0][0]) // array index may not be correct
 
         // 2. call wasm process, passing pointers to the input/output and how many
         // bytes to read/process
@@ -57,10 +57,7 @@ class WasmProcessor extends AudioWorkletProcessor {
         // 3. copy the processed values back over to the worklet output array
         // NOTE: unfortunately a `set` here (which copies values, not references) is
         // unavoidable. Still probably faster than iterating over every sample.
-        let output = outputs[0];
-        console.log(output.length);
-        output[0].set(this._outBuf)
-        // output[1].set(this._outBuf)
+        outputs[0][0].set(this._outBuf)
 
         return true;
     }

@@ -9,9 +9,14 @@ function initButton() {
     button.innerText = 'init';
     button.addEventListener("click", () => {
         const ac = new AudioContext();
+        const osc = ac.createOscillator();
+        osc.frequency.setValueAtTime(440,ac.currentTime);
+        osc.start();
 
         // @ts-ignore
         initNode(ac).then(node => {
+            // @ts-ignore
+            osc.connect(node);
             // @ts-ignore
             node.connect(ac.destination);
         });

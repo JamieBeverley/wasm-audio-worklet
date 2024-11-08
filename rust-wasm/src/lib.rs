@@ -34,8 +34,10 @@ pub extern "C" fn get_sample() -> f32 {
 #[no_mangle]
 pub extern "C" fn process(in_ptr: *mut f32, out_ptr:*mut f32, block_size:usize) -> bool {
     let out_buf: &mut [f32] = unsafe { std::slice::from_raw_parts_mut(out_ptr, block_size)};
+    let in_buf: &mut [f32] = unsafe { std::slice::from_raw_parts_mut(in_ptr, block_size)};
+    
     for i in 0..block_size {
-        out_buf[i] = get_sample();
+        out_buf[i] = in_buf[i] + (get_sample() * 0.25);
     }
     return true;
 }
