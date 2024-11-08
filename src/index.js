@@ -2,7 +2,7 @@
 // import DUCK from './duck.jpeg';
 const DUCK = new URL('./duck.jpeg', import.meta.url).href
 const WORKLET_PATH = new URL('./worklet.js', import.meta.url).href
-const WASM_PATH = new URL('./rust_wasm_bg.wasm', import.meta.url).href
+export const WASM_PATH = new URL('./rust_wasm_bg.wasm', import.meta.url).href
 
 
 // const WORKLET_PATH = ''// from '../public/worklet.static';
