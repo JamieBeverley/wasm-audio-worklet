@@ -1,18 +1,18 @@
 class WasmProcessor extends AudioWorkletProcessor {
 
     constructor() {
-        console.log("wtf")
         super();
         this._wasm = null;
         this._inPtr = null;
         this._outPtr = null;
         this._inBuf = null;
         this._outBuf = null;
+
         // this is default for WAPI - it will probably be variable some day and
         // need to be accepted from a post-message?
         this._block_size = 128;
 
-        this.port.onmessage = event => this.onmessage.bind(this)(event.data);
+        this.port.onmessage = event => this.onmessage(event.data);
     }
 
     onmessage(data) {
