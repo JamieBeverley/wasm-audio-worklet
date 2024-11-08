@@ -1,9 +1,9 @@
  {
-  "name": "mynode",
+  "name": "wasm-audio-worklet",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/mynode.umd.js",
-  "module": "dist/mynode.mjs",
+  "main": "dist/wasm-audio-worklet.umd.js",
+  "module": "dist/wasm-audio-worklet.mjs",
   "files": [
     "dist/",
     "public/"

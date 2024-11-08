@@ -11,8 +11,8 @@ export default defineConfig({
     build: {
         lib: {
             entry: resolve(__dirname, 'src/index.js'), // Set entry point
-            name: 'mynode',
-            fileName: 'mynode',
+            name: 'wasm-audio-worklet',
+            fileName: 'wasm-audio-worklet',
         },
         copyPublicDir: true,
         sourcemap: true,
@@ -22,13 +22,13 @@ export default defineConfig({
                 {
                     dir: 'dist', // Output directory for npm package
                     format: 'es', // ES module format
-                    entryFileNames: 'mynode.mjs', // Output filename for UMD
+                    entryFileNames: 'wasm-audio-worklet.mjs', // Output filename for UMD
                 },
                 {
                     format: 'umd', // UMD format for compatibility
-                    name: 'mynode', // Name for UMD export
+                    name: 'wasm-audio-worklet', // Name for UMD export
                     dir: 'dist',
-                    entryFileNames: 'mynode.umd.js', // Output filename for UMD
+                    entryFileNames: 'wasm-audio-worklet.umd.js', // Output filename for UMD
                 }
             ]
         },
