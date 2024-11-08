@@ -73,9 +73,6 @@ async function transformArrayInWasm() {
     // Now `array` in JavaScript has been transformed by WebAssembly
     // return array;
 }
-
-// Example usage:
-transformArrayInWasm().then(result => console.log(result)); // Should log the transformed array
-
+console.log(transformArrayInWasm)
 
 // test();
