@@ -3,8 +3,10 @@ class WasmProcessor extends AudioWorkletProcessor {
     constructor() {
         super();
         this._wasm = null;
+        
         this._inPtr = null;
         this._outPtr = null;
+        
         this._inBuf = null;
         this._outBuf = null;
 
@@ -16,14 +18,16 @@ class WasmProcessor extends AudioWorkletProcessor {
     }
 
     onmessage(data) {
-        console.log("message", data);
         if (data.type === 'init-wasm') {
             const instance = async () => {
                 this._wasm = (await WebAssembly.instantiate(data.wasmBytes)).instance.exports;
 
                 // allocates the heap memory for rust, returns a pointer to it.
-                // NOTE: we may need/want to do this multiple times, once per channel per in/out?
-                //      mem allocation  = n_channels * 2 * this._block_size
+                // NOTE: we may need/want to do this multiple times, once per
+                //      channel per in/out?
+                //      mem allocation  = n_channels * 2 * this._block_size.
+                //      Possibly useful to have a class for this (both the ptr 
+                //      and the Float32Array instead of having these separated).
                 this._inPtr = this._wasm.alloc(this._block_size)
                 this._outPtr = this._wasm.alloc(this._block_size)
 

@@ -1,5 +1,5 @@
 import './style.css'
-// @ts-ignore
+// @ts-ignore TODO: emit types from wasm-audio-worklet
 import initNode, {WASM_PATH} from 'wasm-audio-worklet';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -13,11 +13,11 @@ function initButton() {
         osc.frequency.setValueAtTime(440,ac.currentTime);
         osc.start();
 
-        // @ts-ignore
+        // @ts-ignore TODO: emit types from wasm-audio-worklet
         initNode(ac).then(node => {
-            // @ts-ignore
+            // @ts-ignore TODO: emit types from wasm-audio-worklet
             osc.connect(node);
-            // @ts-ignore
+            // @ts-ignore TODO: emit types from wasm-audio-worklet
             node.connect(ac.destination);
         });
     });
