@@ -10,7 +10,6 @@ class WasmProcessor extends AudioWorkletProcessor {
 
         this._inBuf = null;
         this._outBuf = null;
-        this._sampleBuffer = null;
 
         // this is default for WAPI - it will probably be variable some day and
         // need to be accepted from a post-message?
@@ -19,61 +18,86 @@ class WasmProcessor extends AudioWorkletProcessor {
         this.port.onmessage = event => this.onmessage(event.data);
     }
 
+    alloc_memory() {
+        // allocates the heap memory for rust, returns a pointer to it.
+        // NOTE: we may need/want to do this multiple times, once per
+        //      channel per in/out?
+        //      mem allocation  = n_channels * 2 * this._block_size.
+        //      Possibly useful to have a class for this (both the ptr 
+        //      and the Float32Array instead of having these separated).
+        this._inPtr = this._wasm.alloc_block();
+        this._outPtr = this._wasm.alloc_block();
+
+
+        // TODO remove soon...
+        const length = 1152000;
+        this._sampleBufferPtr = this._wasm.alloc(length);
+        this._sampleArray = new Float32Array(
+            this._wasm.memory.buffer,
+            this._sampleBufferPtr,
+            length,
+        )
+
+
+        this._inBuf = new Float32Array(
+            // but `memory` isn't exported from rust, where does it come from?
+            // ChatGPT says when you allocate dynamic memory in wasm, this `memory`
+            // object gets defined on `exports`. (TODO validate? read?)
+            this._wasm.memory.buffer,
+            this._inPtr,
+            this._block_size
+        )
+        this._outBuf = new Float32Array(
+            this._wasm.memory.buffer,
+            this._outPtr,
+            this._block_size
+        );
+    }
+
     onmessage(data) {
         console.log('worklet received:', data.type);
         if (data.type === 'init-wasm') {
             const instance = async () => {
-                this._wasm = (await WebAssembly.instantiate(data.wasmBytes)).instance.exports;
+                const memory = new WebAssembly.Memory({
+                    initial: 20,    // 3 pages of 64KB each (3 * 64KB = 192KB initial memory)
+                    maximum: 20     // Limit memory growth to 3 pages
+                });
 
-                // allocates the heap memory for rust, returns a pointer to it.
-                // NOTE: we may need/want to do this multiple times, once per
-                //      channel per in/out?
-                //      mem allocation  = n_channels * 2 * this._block_size.
-                //      Possibly useful to have a class for this (both the ptr 
-                //      and the Float32Array instead of having these separated).
-                this._inPtr = this._wasm.alloc(this._block_size);
-                this._outPtr = this._wasm.alloc(this._block_size);
+                // Create an import object to pass to the WebAssembly module
+                const imports = {
+                    env: {
+                        memory: memory,
+                        // Add any other necessary imports
+                    }
+                };
 
-                this._sampleBufferPtr = this._wasm.alloc(this._block_size);
-                this._sampleBuffer = this._wasm.alloc_buffer_128();
-                
-                this._inBuf = new Float32Array(
-                    // but `memory` isn't exported from rust, where does it come from?
-                    // ChatGPT says when you allocate dynamic memory in wasm, this `memory`
-                    // object gets defined on `exports`. (TODO validate? read?)
-                    this._wasm.memory.buffer,
-                    this._inPtr,
-                    this._block_size
-                )
-                this._outBuf = new Float32Array(
-                    this._wasm.memory.buffer,
-                    this._outPtr,
-                    this._block_size
-                );
-                this.port.postMessage({type:"init-wasm-complete"});
+                this._wasm = (await WebAssembly.instantiate(data.wasmBytes, imports)).instance.exports;
+                this.alloc_memory();
+
+                this.port.postMessage({ type: "init-wasm-complete" });
             }
             instance();
         } else if (data.type === 'init-buffer') {
-            if (this._sampleBuffer === null) {
-                throw Error("cannot init sample buffer before wasm has loaded")
-            }
-            const sampleArray = new Float32Array(
-                this._wasm.memory.buffer,
-                this._sampleBufferPtr,
-                data.data.buffer.length,
-            )
-            sampleArray.set(data.data.buffer);
-            this._sampleBuffer.set_buffer(sampleArray, sampleArray.length);
-            this.port.postMessage({type:"init-buffer-complete"});
+
+            const { length, channelData } = data.data;
+            console.log('allocated bufferSize', length)
+
+            this._sampleArray.set(channelData);
+            console.log('set data on array', length)
+
+            this._wasm.looper_set_buffer(this._sampleBufferPtr, length)
+            console.log('set buffer')
+
+            this.port.postMessage({ type: "init-buffer-complete" });
         }
     }
 
     process(inputs, outputs, parameters) {
         if (
             this._wasm === null ||
-            (inputs[0][0]===undefined)
+            (inputs[0][0] === undefined)
         ) {
-                return true;
+            return true;
         }
 
         // 1. Copy input data to t`this._inPtr`

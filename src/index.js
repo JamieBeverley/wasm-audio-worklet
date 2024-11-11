@@ -14,31 +14,37 @@ export const initNode = async (context) => {
     }
     const node = new AudioWorkletNode(context, 'WasmProcessor');
 
-    let initCompletePromise = new Promise((res,rej)=>{
-        node.port.onmessage = ({data})=>{
+    let initCompletePromise = new Promise((res, rej) => {
+        node.port.onmessage = ({ data }) => {
             console.log('js received: ', data.type)
-            if(data.type==='init-wasm-complete'){
+            if (data.type === 'init-wasm-complete') {
                 node.port.onmessage = undefined;
                 res();
             }
         };
-        node.port.postMessage({type:'init-wasm', wasmBytes});
+        node.port.postMessage({ type: 'init-wasm', wasmBytes });
     });
-    
+
     await initCompletePromise;
 
     return node
 }
 
 export const initBuffer = async (node, buffer) => {
-    let initCompletePromise = new Promise((res,rej)=>{
-        node.port.onmessage = ({data})=>{
-            if(data.type==='init-wasm-complete') {
+    let initCompletePromise = new Promise((res, rej) => {
+        node.port.onmessage = ({ data }) => {
+            if (data.type === 'init-buffer-complete') {
                 node.port.onmessage = undefined;
                 res();
             }
         }
-        node.port.postMessage({type:'init-buffer', data:buffer.getChannelData(0)});
+        node.port.postMessage({
+            type: 'init-buffer',
+            data: {
+                channelData: buffer.getChannelData(0),
+                length: buffer.length,
+            }
+        });
     });
     await initCompletePromise;
 }

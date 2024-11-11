@@ -20,7 +20,7 @@ function initButton() {
         // @ts-ignore
         const buffer = await ac.decodeAudioData(await response.arrayBuffer());
         await initBuffer(node, buffer);
-
+        console.log('done...')
         osc.connect(node);
         // @ts-ignore TODO: emit types from wasm-audio-worklet
         node.connect(ac.destination);
