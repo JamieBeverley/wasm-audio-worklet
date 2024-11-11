@@ -20,6 +20,7 @@ class WasmProcessor extends AudioWorkletProcessor {
     }
 
     onmessage(data) {
+        console.log('worklet received:', data.type);
         if (data.type === 'init-wasm') {
             const instance = async () => {
                 this._wasm = (await WebAssembly.instantiate(data.wasmBytes)).instance.exports;
@@ -32,10 +33,10 @@ class WasmProcessor extends AudioWorkletProcessor {
                 //      and the Float32Array instead of having these separated).
                 this._inPtr = this._wasm.alloc(this._block_size);
                 this._outPtr = this._wasm.alloc(this._block_size);
+
                 this._sampleBufferPtr = this._wasm.alloc(this._block_size);
-
                 this._sampleBuffer = this._wasm.alloc_buffer_128();
-
+                
                 this._inBuf = new Float32Array(
                     // but `memory` isn't exported from rust, where does it come from?
                     // ChatGPT says when you allocate dynamic memory in wasm, this `memory`
@@ -48,7 +49,8 @@ class WasmProcessor extends AudioWorkletProcessor {
                     this._wasm.memory.buffer,
                     this._outPtr,
                     this._block_size
-                )
+                );
+                this.port.postMessage({type:"init-wasm-complete"});
             }
             instance();
         } else if (data.type === 'init-buffer') {
@@ -58,14 +60,21 @@ class WasmProcessor extends AudioWorkletProcessor {
             const sampleArray = new Float32Array(
                 this._wasm.memory.buffer,
                 this._sampleBufferPtr,
-                data.buffer.length,
+                data.data.buffer.length,
             )
+            sampleArray.set(data.data.buffer);
             this._sampleBuffer.set_buffer(sampleArray, sampleArray.length);
+            this.port.postMessage({type:"init-buffer-complete"});
         }
     }
 
     process(inputs, outputs, parameters) {
-        if (this._wasm === null) return true;
+        if (
+            this._wasm === null ||
+            (inputs[0][0]===undefined)
+        ) {
+                return true;
+        }
 
         // 1. Copy input data to t`this._inPtr`
         this._inBuf.set(inputs[0][0]) // array index may not be correct
