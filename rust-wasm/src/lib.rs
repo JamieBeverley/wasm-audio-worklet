@@ -36,17 +36,23 @@ impl Looper{
     #[no_mangle]
     pub fn set_buffer(&mut self, buffer: *mut f32, size:usize){
         self.buffer = unsafe {Vec::from_raw_parts(buffer, size, size)};
-        self.index = ((self.index.round() as usize)%self.buffer.len()) as f32;
+        self.index = ((self.index.floor() as usize)%self.buffer.len()) as f32;
     }
 
     #[no_mangle]
     pub fn get_block(&mut self) -> [f32; BLOCK_SIZE]{
         for i in 0..self.block.len(){
-            self.block[i] = self.buffer[self.index.round() as usize];
+            self.block[i] = self.buffer[self.index.floor() as usize];
             if !self.paused{
                 self.index += self.playback_rate;
-                if self.index > (self.buffer.len() as f32){
-                    self.index = 0.0;
+
+                let buf_len = self.buffer.len() as f32;
+                if self.index >= buf_len || self.index < 0.0{
+                    if self.playback_rate<0.0{
+                        self.index = buf_len - 1.0;
+                    } else if self.playback_rate > 0.0{
+                        self.index = 0.0
+                    }
                 }
             }
         }
@@ -97,9 +103,13 @@ pub extern "C" fn get_sample() -> f32 {
 pub extern "C" fn process(in_ptr: *mut f32, out_ptr:*mut f32) -> bool {
     let out_buf: &mut [f32] = unsafe { std::slice::from_raw_parts_mut(out_ptr, BLOCK_SIZE)};
     let in_buf: &mut [f32] = unsafe { std::slice::from_raw_parts_mut(in_ptr, BLOCK_SIZE)};
+
+    let mut looper = LOOPER.lock().unwrap();
+    let block = looper.get_block();
     
     for i in 0..BLOCK_SIZE {
-        out_buf[i] = in_buf[i] + (get_sample() * 0.25);
+        out_buf[i] = block[i];
+        // out_buf[i] = in_buf[i] + (get_sample() * 0.25);
     }
     return true;
 }

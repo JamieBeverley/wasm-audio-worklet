@@ -18,7 +18,7 @@ class WasmProcessor extends AudioWorkletProcessor {
         this.port.onmessage = event => this.onmessage(event.data);
     }
 
-    alloc_memory() {
+    alloc_memory(bufferLength) {
         // allocates the heap memory for rust, returns a pointer to it.
         // NOTE: we may need/want to do this multiple times, once per
         //      channel per in/out?
@@ -30,12 +30,12 @@ class WasmProcessor extends AudioWorkletProcessor {
 
 
         // TODO remove soon...
-        const length = 1152000;
-        this._sampleBufferPtr = this._wasm.alloc(length);
+        // const length = 1152000;
+        this._sampleBufferPtr = this._wasm.alloc(bufferLength);
         this._sampleArray = new Float32Array(
             this._wasm.memory.buffer,
             this._sampleBufferPtr,
-            length,
+            bufferLength,
         )
 
 
@@ -72,22 +72,15 @@ class WasmProcessor extends AudioWorkletProcessor {
                 };
 
                 this._wasm = (await WebAssembly.instantiate(data.wasmBytes, imports)).instance.exports;
-                this.alloc_memory();
-
                 this.port.postMessage({ type: "init-wasm-complete" });
             }
             instance();
         } else if (data.type === 'init-buffer') {
-
             const { length, channelData } = data.data;
-            console.log('allocated bufferSize', length)
+            this.alloc_memory(length);
 
             this._sampleArray.set(channelData);
-            console.log('set data on array', length)
-
             this._wasm.looper_set_buffer(this._sampleBufferPtr, length)
-            console.log('set buffer')
-
             this.port.postMessage({ type: "init-buffer-complete" });
         }
     }
@@ -95,7 +88,8 @@ class WasmProcessor extends AudioWorkletProcessor {
     process(inputs, outputs, parameters) {
         if (
             this._wasm === null ||
-            (inputs[0][0] === undefined)
+            (inputs[0][0] === undefined) ||
+            this._sampleBufferPtr == null
         ) {
             return true;
         }
