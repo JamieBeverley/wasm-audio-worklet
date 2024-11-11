@@ -3,12 +3,14 @@ class WasmProcessor extends AudioWorkletProcessor {
     constructor() {
         super();
         this._wasm = null;
-        
+
         this._inPtr = null;
         this._outPtr = null;
-        
+        this._sampleBufferPtr = null;
+
         this._inBuf = null;
         this._outBuf = null;
+        this._sampleBuffer = null;
 
         // this is default for WAPI - it will probably be variable some day and
         // need to be accepted from a post-message?
@@ -28,8 +30,11 @@ class WasmProcessor extends AudioWorkletProcessor {
                 //      mem allocation  = n_channels * 2 * this._block_size.
                 //      Possibly useful to have a class for this (both the ptr 
                 //      and the Float32Array instead of having these separated).
-                this._inPtr = this._wasm.alloc(this._block_size)
-                this._outPtr = this._wasm.alloc(this._block_size)
+                this._inPtr = this._wasm.alloc(this._block_size);
+                this._outPtr = this._wasm.alloc(this._block_size);
+                this._sampleBufferPtr = this._wasm.alloc(this._block_size);
+
+                this._sampleBuffer = this._wasm.alloc_buffer_128();
 
                 this._inBuf = new Float32Array(
                     // but `memory` isn't exported from rust, where does it come from?
@@ -46,6 +51,16 @@ class WasmProcessor extends AudioWorkletProcessor {
                 )
             }
             instance();
+        } else if (data.type === 'init-buffer') {
+            if (this._sampleBuffer === null) {
+                throw Error("cannot init sample buffer before wasm has loaded")
+            }
+            const sampleArray = new Float32Array(
+                this._wasm.memory.buffer,
+                this._sampleBufferPtr,
+                data.buffer.length,
+            )
+            this._sampleBuffer.set_buffer(sampleArray, sampleArray.length);
         }
     }
 
