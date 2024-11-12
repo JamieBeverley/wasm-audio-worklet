@@ -77,6 +77,7 @@ class WasmProcessor extends AudioWorkletProcessor {
             instance();
         } else if (data.type === 'init-buffer') {
             const { length, channelData } = data.data;
+            console.log('buffer len:', length);
             this.alloc_memory(length);
 
             this._sampleArray.set(channelData);
