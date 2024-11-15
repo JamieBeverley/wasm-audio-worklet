@@ -1,4 +1,6 @@
-public/sound-file.wav
+#
+public/*.wav
+
 # Logs
 logs
 *.log

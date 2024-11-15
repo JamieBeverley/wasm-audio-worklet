@@ -76,7 +76,7 @@ pub struct GrainPlayhead {
     // private
     rng: SimpleRNG,
     playhead: f32,
-    start: usize,
+    pub start: usize,
     end: usize,
     // 'fixed' (ish)
     pub playback_rate: f32,

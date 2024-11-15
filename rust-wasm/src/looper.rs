@@ -118,39 +118,20 @@ impl SamplePlayer for GranularSynthesizer {
     fn set_buffer(&mut self, buffer: *mut f32, size: usize) {
         self.buffer = unsafe { Vec::from_raw_parts(buffer, size, size) };
         self.index = ((self.index.floor() as usize) % self.buffer.len()) as f32;
-        self.params.push(Box::new(GrainPlayhead::new(
-            1.0,
-            self.buffer.len() / 2,
-            5000,
-            0.01,
-            GrainEnv {
-                attack: 0.5,
-                sustain: 0.0,
-                release: 0.5,
-            },
-        )));
-        self.params.push(Box::new(GrainPlayhead::new(
-            1.0,
-            5000 + self.buffer.len() / 2,
-            8000,
-            0.02,
-            GrainEnv {
-                attack: 0.5,
-                sustain: 0.0,
-                release: 0.5,
-            },
-        )));
-        self.params.push(Box::new(GrainPlayhead::new(
-            1.0,
-            0,
-            8000,
-            0.02,
-            GrainEnv {
-                attack: 0.5,
-                sustain: 0.0,
-                release: 0.5,
-            },
-        )));
+        
+        for _ in 0..1 {
+            self.params.push(Box::new(GrainPlayhead::new(
+                1.0,
+                0,
+                5000,
+                0.01,
+                GrainEnv {
+                    attack: 0.5,
+                    sustain: 0.0,
+                    release: 0.5,
+                },
+            )));
+        }
     }
 
     fn get_block(&mut self) -> [f32; BLOCK_SIZE] {
