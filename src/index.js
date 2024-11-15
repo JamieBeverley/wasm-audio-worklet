@@ -1,50 +1,71 @@
-const WORKLET_PATH = new URL('./worklet.js', import.meta.url).href
-export const WASM_PATH = new URL('./rust_wasm.wasm', import.meta.url).href
+class GranularNode extends AudioWorkletNode {
 
-export const initNode = async (context) => {
-    const response = await window.fetch(WASM_PATH);
-    const wasmBytes = await response.arrayBuffer();
+    static WORKLET_PATH = new URL('./worklet.js', import.meta.url).href
+    static WASM_PATH = new URL('./rust_wasm.wasm', import.meta.url).href
 
-    try {
-        await context.audioWorklet.addModule(WORKLET_PATH);
-    } catch (e) {
-        throw new Error(
-            `Failed to load audio analyzer worklet at url: ${WORKLET_PATH}. Further info: ${e.message}`
-        );
+    constructor(audioContext) {
+        super(audioContext, "WasmProcessor")
     }
-    const node = new AudioWorkletNode(context, 'WasmProcessor');
 
-    let initCompletePromise = new Promise((res, rej) => {
-        node.port.onmessage = ({ data }) => {
-            console.log('js received: ', data.type)
-            if (data.type === 'init-wasm-complete') {
-                node.port.onmessage = undefined;
-                res();
-            }
-        };
-        node.port.postMessage({ type: 'init-wasm', wasmBytes });
-    });
+    connect(...args){
+        return super.connect(...args)
+    }
 
-    await initCompletePromise;
+    static async initAsync(audioContext, buffer){
+        await audioContext.audioWorklet.addModule(GranularNode.WORKLET_PATH);
+        const node = new GranularNode(audioContext);
+        await node.load(buffer);
+        return node
+    }
 
-    return node
-}
+    async loadWasm() {
+        const response = await window.fetch(GranularNode.WASM_PATH);
+        const wasmBytes = await response.arrayBuffer();
 
-export const initBuffer = async (node, buffer) => {
-    let initCompletePromise = new Promise((res, rej) => {
-        node.port.onmessage = ({ data }) => {
-            if (data.type === 'init-buffer-complete') {
-                node.port.onmessage = undefined;
-                res();
-            }
-        }
-        node.port.postMessage({
-            type: 'init-buffer',
-            data: {
-                channelData: buffer.getChannelData(0),
-                length: buffer.length,
-            }
+        let initCompletePromise = new Promise((res, rej) => {
+            const rejTimeout = setTimeout(() => {
+                rej("Timeout waiting for wasm to initialize")
+            }, 10000);
+            this.port.onmessage = ({ data }) => {
+                console.log('js received: ', data.type)
+                if (data.type === 'init-wasm-complete') {
+                    clearInterval(rejTimeout);
+                    this.port.onmessage = undefined;
+                    res();
+                }
+            };
+            this.port.postMessage({ type: 'init-wasm', wasmBytes });
         });
-    });
-    await initCompletePromise;
+
+        await initCompletePromise;
+        return this;
+    }
+
+    async loadBuffer(buffer) {
+        let initCompletePromise = new Promise((res, rej) => {
+            this.port.onmessage = ({ data }) => {
+                if (data.type === 'init-buffer-complete') {
+                    this.port.onmessage = undefined;
+                    res();
+                }
+            }
+            this.port.postMessage({
+                type: 'init-buffer',
+                data: {
+                    channelData: buffer.getChannelData(0),
+                    length: buffer.length,
+                }
+            });
+        });
+        await initCompletePromise;
+        return this;
+    }
+
+    async load(buffer){
+        await this.loadWasm();
+        await this.loadBuffer(buffer);
+        return this;
+    }
 }
+
+export default GranularNode;

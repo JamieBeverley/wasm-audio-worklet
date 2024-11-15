@@ -1,5 +1,30 @@
 class WasmProcessor extends AudioWorkletProcessor {
 
+    static get parameterDescriptors() {
+        return [
+            // All 3 of these: k-rate for now...
+            {
+                name: "start",
+                defaultValue: 0,
+                minValue: 0,
+                maxValue: 1,
+            },
+            {
+                name: "grainDuration",
+                defaultValue: 0,
+                minValue: 0,
+                maxValue: 1,
+            },
+            {
+                name: "grainJitter",
+                defaultValue: 0,
+                minValue: 0,
+                maxValue: 1,
+            }
+        ]
+    }
+
+
     constructor() {
         super();
         this._wasm = null;
@@ -81,7 +106,7 @@ class WasmProcessor extends AudioWorkletProcessor {
             this.alloc_memory(length);
 
             this._sampleArray.set(channelData);
-            this._wasm.looper_set_buffer(this._sampleBufferPtr, length)
+            this._wasm.synth_set_buffer(this._sampleBufferPtr, length)
             this.port.postMessage({ type: "init-buffer-complete" });
         }
     }
