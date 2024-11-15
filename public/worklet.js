@@ -11,12 +11,12 @@ class WasmProcessor extends AudioWorkletProcessor {
             },
             {
                 name: "grainDuration",
-                defaultValue: 0,
+                defaultValue: 0.005,
                 minValue: 0,
                 maxValue: 1,
             },
             {
-                name: "grainJitter",
+                name: "range",
                 defaultValue: 0,
                 minValue: 0,
                 maxValue: 1,
@@ -80,7 +80,6 @@ class WasmProcessor extends AudioWorkletProcessor {
     }
 
     onmessage(data) {
-        console.log('worklet received:', data.type);
         if (data.type === 'init-wasm') {
             const instance = async () => {
                 const memory = new WebAssembly.Memory({
@@ -119,6 +118,17 @@ class WasmProcessor extends AudioWorkletProcessor {
         ) {
             return true;
         }
+        // console.log(
+            // parameters["start"][0],
+            // parameters["grainDuration"][0],
+            // parameters["range"][0],
+        // )
+        // k-rate for now...
+        this._wasm.synth_set_k_rate_params(
+            parameters["start"][0],
+            parameters["grainDuration"][0],
+            parameters["range"][0],
+        )
 
         // 1. Copy input data to t`this._inPtr`
         this._inBuf.set(inputs[0][0]) // array index may not be correct

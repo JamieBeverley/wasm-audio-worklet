@@ -88,27 +88,18 @@ impl GranularSynthesizer {
 
     pub fn set_k_rate_params(
         &mut self,
-        start: Option<f32>, 
-        grain_duration:Option<f32>,
-        range:Option<f32>,
+        start: f32, 
+        grain_duration:f32,
+        range:f32,
     ) {
         
-        let start_anchor = start.map(|x| self.to_sample_index(x));
-        let grain_duration = grain_duration.map(|x| self.to_sample_index(x));
+        let start_anchor = self.to_sample_index(start);
+        let grain_duration = self.to_sample_index(grain_duration);
 
-
-        if start_anchor.is_some() || grain_duration.is_some() || range.is_some(){
-            for param in self.params.iter_mut() {
-                if start_anchor.is_some() {
-                    param.start_anchor = start_anchor.unwrap();
-                }
-                if grain_duration.is_some() {
-                    param.grain_duration = grain_duration.unwrap();
-                }
-                if range.is_some() {
-                    param.range = range.unwrap();
-                }
-            }
+        for param in self.params.iter_mut() {
+            param.start_anchor = start_anchor;
+            param.n_frames = grain_duration;
+            param.range = range;
         }
     }
 }
@@ -128,25 +119,36 @@ impl SamplePlayer for GranularSynthesizer {
         self.buffer = unsafe { Vec::from_raw_parts(buffer, size, size) };
         self.index = ((self.index.floor() as usize) % self.buffer.len()) as f32;
         self.params.push(Box::new(GrainPlayhead::new(
-            0.5,
+            1.0,
             self.buffer.len() / 2,
             5000,
             0.01,
             GrainEnv {
-                attack: 0.2,
-                sustain: 0.6,
-                release: 0.2,
+                attack: 0.5,
+                sustain: 0.0,
+                release: 0.5,
             },
         )));
         self.params.push(Box::new(GrainPlayhead::new(
-            0.5,
-            7000 + self.buffer.len() / 2,
+            1.0,
+            5000 + self.buffer.len() / 2,
             8000,
             0.02,
             GrainEnv {
-                attack: 0.2,
-                sustain: 0.6,
-                release: 0.2,
+                attack: 0.5,
+                sustain: 0.0,
+                release: 0.5,
+            },
+        )));
+        self.params.push(Box::new(GrainPlayhead::new(
+            1.0,
+            0,
+            8000,
+            0.02,
+            GrainEnv {
+                attack: 0.5,
+                sustain: 0.0,
+                release: 0.5,
             },
         )));
     }

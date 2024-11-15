@@ -57,10 +57,10 @@ pub extern "C" fn synth_set_buffer(buffer: *mut f32, size: usize) {
 
 #[no_mangle]
 pub extern "C" fn synth_set_k_rate_params(
-    start: Option<f32>, 
-    grainDuration:Option<f32>,
-    grainJitter:Option<f32>,
+    start: f32, 
+    grain_duration:f32,
+    range:f32,
 ) {
     let mut synth = SYNTH.lock().unwrap();
-    synth.set_start(start);
+    synth.set_k_rate_params(start, grain_duration, range);
 }
