@@ -19,6 +19,13 @@ function createInteractive3DSVG(
     const minZ = 0.0005;
     const maxZ = 1.0;
     let zPortion = 0.5;
+    let xPortion = 0;
+    let yPortion = 0;
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("r", (zPortion*width).toString());
+    circle.setAttribute("fill", "blue");
+    svg.appendChild(circle);
 
     const verticalLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
     verticalLine.setAttribute("stroke", "black");
@@ -30,23 +37,12 @@ function createInteractive3DSVG(
     horizontalLine.setAttribute("stroke-width", "2");
     svg.appendChild(horizontalLine);
 
-    const positionRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    positionRect.setAttribute("height", "10");
-    positionRect.setAttribute("fill", "blue");
-    svg.appendChild(positionRect);
 
-    let xPortion = 0;
-    let yPortion = 0;
-
-
-    svg.addEventListener("mousemove", (event: MouseEvent) => {
-        const rect = svg.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-
-        xPortion = mouseX / width;
-        yPortion = 1 - mouseY / height;
-
+    const updeateSvg = (x:number, y:number, z:number) => {
+        const mouseX = x*width;
+        const mouseY = (1-y)*height;
+        const radius = z * width;
+        
         verticalLine.setAttribute("x1", mouseX.toString());
         verticalLine.setAttribute("x2", mouseX.toString());
         verticalLine.setAttribute("y1", "0");
@@ -56,23 +52,31 @@ function createInteractive3DSVG(
         horizontalLine.setAttribute("x2", width.toString());
         horizontalLine.setAttribute("y1", mouseY.toString());
         horizontalLine.setAttribute("y2", mouseY.toString());
+        
+        circle.setAttribute("cx", mouseX.toString());
+        circle.setAttribute("cy", mouseY.toString());
+        circle.setAttribute("r", radius.toString());
+    }
 
-        const rectWidth = zPortion * width;
-        positionRect.setAttribute("x", mouseX.toString());
-        positionRect.setAttribute("y", (mouseY - 5).toString());
-        positionRect.setAttribute("width", rectWidth.toString());
-
-        callback(xPortion, yPortion, zPortion);
+    svg.addEventListener("mousemove", (event: MouseEvent) => {
+        const rect = svg.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        xPortion = mouseX / width;
+        yPortion = 1 - mouseY / height;
+        updeateSvg(xPortion, yPortion, zPortion);
+        callback(xPortion, yPortion, zPortion**2);
     });
 
     svg.addEventListener("wheel", (event: WheelEvent) => {
         event.preventDefault();
-        zPortion = Math.min(maxZ, Math.max(minZ, zPortion + event.deltaY * -0.001));
-        const rectWidth = zPortion * width;
-        positionRect.setAttribute("width", rectWidth.toString());
-        callback(xPortion, yPortion, zPortion);
+        zPortion = zPortion + event.deltaY * 0.00003;
+        zPortion = Math.min(maxZ, Math.max(minZ, zPortion)); 
+        updeateSvg(xPortion,yPortion,zPortion);
+        callback(xPortion, yPortion, zPortion**2);
     });
 
+    
     container.appendChild(svg);
 }
 
@@ -97,8 +101,8 @@ function initButton() {
 
         createInteractive3DSVG(app, 300, 300, (x, y, z) => {
             node.parameters.get('start').setValueAtTime(x, ac.currentTime);
-            node.parameters.get('range').setValueAtTime(y*y*y, ac.currentTime);
-            node.parameters.get('grainDuration').setValueAtTime(z*z*z, ac.currentTime);
+            node.parameters.get('range').setValueAtTime(y**3, ac.currentTime);
+            node.parameters.get('grainDuration').setValueAtTime(z, ac.currentTime);
         });
     });
 
