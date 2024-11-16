@@ -108,7 +108,25 @@ impl GrainPlayhead {
         }
     }
 
+
     fn get_envelope(&self) -> f32 {
+        let dur = (self.end - self.start) as f32;
+        let index = self.playhead;
+        let start = self.start as f32;
+        let attack :f32= 100.0;
+        let release: f32= 100.0;
+        let sustain = (self.end as f32 - self.start as f32)-attack-release;
+
+        if index < (start + attack) {
+            return ((index - start) as f32) / attack as f32;
+        } else if index > (start + attack + sustain) {
+            let attack_sustain = (self.envelope.attack + self.envelope.sustain) * dur;
+            return 1.0 - (index - start - attack_sustain) / (self.envelope.release * dur);
+        }
+        return 1.0;
+    }
+
+    fn get_envelope2(&self) -> f32 {
         let dur = (self.end - self.start) as f32;
         let index = self.playhead;
         let start = self.start as f32;
