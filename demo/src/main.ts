@@ -83,9 +83,9 @@ function createInteractive3DSVG(
         if(index===0){
             xPortion = value/127;
         } else if(index===1){
-            yPortion = value/127
-        } else if(index===2){
             zPortion = value/127;
+        } else if(index===2){
+            yPortion = value/127
         } else{
             return
         }
