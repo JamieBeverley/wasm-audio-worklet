@@ -119,17 +119,18 @@ impl SamplePlayer for GranularSynthesizer {
         self.buffer = unsafe { Vec::from_raw_parts(buffer, size, size) };
         self.index = ((self.index.floor() as usize) % self.buffer.len()) as f32;
         
-        for _ in 0..1 {
+        for i in 0..20 {
             self.params.push(Box::new(GrainPlayhead::new(
                 1.0,
                 0,
-                5000,
+                500*i,
                 0.01,
                 GrainEnv {
-                    attack: 0.5,
-                    sustain: 0.0,
-                    release: 0.5,
+                    attack: 0.2,
+                    sustain: 0.6,
+                    release: 0.2,
                 },
+                i as u32 * 50
             )));
         }
     }

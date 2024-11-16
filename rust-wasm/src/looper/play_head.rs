@@ -93,9 +93,10 @@ impl GrainPlayhead {
         n_frames: usize,
         range: f32,
         envelope: GrainEnv,
+        seed: u32,
     ) -> Self {
         GrainPlayhead {
-            rng: SimpleRNG::new(5),
+            rng: SimpleRNG::new(seed),
             playhead: start_anchor as f32,
             start: start_anchor,
             end: start_anchor + n_frames,
@@ -116,7 +117,7 @@ impl GrainPlayhead {
             return ((index - start) as f32) / (self.envelope.attack * dur) as f32;
         } else if index > (start + (self.envelope.attack + self.envelope.sustain) * dur) {
             let attack_sustain = (self.envelope.attack + self.envelope.sustain) * dur;
-            return (index - start - attack_sustain) / (self.envelope.release * dur);
+            return 1.0 - (index - start - attack_sustain) / (self.envelope.release * dur);
         }
         return 1.0;
     }
@@ -124,7 +125,7 @@ impl GrainPlayhead {
     fn reset_rand_playhead(&mut self, buffer: &Vec<f32>) {
         let buffer_len = buffer.len();
 
-        let start_pos = (self.rng.next_f32() * 2.0 * self.range) - self.range;
+        let start_pos = (self.rng.next_f32() * 2.0 - 1.0) * self.range;
         let start_pos = self.start_anchor as i32 + (start_pos * (buffer_len as f32)).round() as i32;
 
         if start_pos < 0 {
