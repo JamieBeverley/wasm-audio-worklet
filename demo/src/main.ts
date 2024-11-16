@@ -1,6 +1,7 @@
 import './style.css'
 // @ts-ignore TODO: emit types from wasm-audio-worklet
 import GranularNode from 'wasm-audio-worklet';
+import WebMidiController from "./midi"
 
 const app = document.querySelector<HTMLDivElement>('#app') as HTMLDivElement;
 
@@ -78,6 +79,20 @@ function createInteractive3DSVG(
 
     
     container.appendChild(svg);
+    new WebMidiController("midi-in-device", 3,app, (index, value) =>{
+        if(index===0){
+            xPortion = value/127;
+        } else if(index===1){
+            yPortion = value/127
+        } else if(index===2){
+            zPortion = value/127;
+        } else{
+            return
+        }
+        updeateSvg(xPortion,yPortion,zPortion);
+        callback(xPortion, yPortion, zPortion**2);
+    })
+
 }
 
 
@@ -107,7 +122,6 @@ function initButton() {
     });
 
     app.appendChild(button);
-
 }
 
 initButton();
