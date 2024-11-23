@@ -7,20 +7,24 @@ Rust -> WASM -> Audio Worklet -> threaded realtime audio in the browser
 (with hopes that there may also be some performance gain in using WASM instead
 of JS AudioWorklets but we'll see?)
 
-- `./rust-wasm` contains a crate that defines a very basic audio `process` function
-    - presently just adds some noise to whatever the input signal is.
-- `./` exports an async `initNode` function to set up an `AudioWorkletNode`:
-    - loads the `wasm` binary
-    - pipes it over to an AudioWorklet via a post message
-    - creates an `AudioWorkletNode` and returns it
-- `./demo` contains a `vanilla-ts` vite app for demonstration which:
-    - imports `./`
-    - sets up a button (user-interaction required to start audio context)
-    - when that button clicks, plays an oscillator and connects it to the
-      Wasm-based AudioWorkletNode
-      (so it plays a sin osc w/ some noise added... `tadaa`)
+## Directory Map
 
-## Things tried + resources
+- `./`:
+    - the root of the project is an npm module that is intended to be a portable
+      rust/wasm AudioWorkletNode
+    - Intended to be a simple npm install for other JS projects to import this
+      module so the wasm + worklet are bundled too
+    - presently it exposes a new AudioWorkletNode
+    - `public/rust_wasm.wasm` and `public/worklet.js` get bundled as well as
+      they must be loaded statically
+    - The AudioNode gets reference to their paths via `URL(...).href`
+- `./rust-wasm` - the rust crate we compile to wasm to perform DSP.
+    - built via cargo build --target wasm32-unknown-unknown (notably not with
+      wasm-pack)
+- `./demo`
+    - a small vite vanilla-ts page for testing things
+
+## Things Tried + Resources
 
 - Started here:
     - https://dev.to/speratus/i-built-this-despite-a-flaw-in-rusts-webassembly-toolchain-38p2
