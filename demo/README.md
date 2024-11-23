@@ -3,12 +3,12 @@ A demo app for testing/demonstrating/experimenting w/ the parent npm module.
 
 Usage:
 
-## Install Deps:
+## Installation:
 ```bash
 npm install
 ```
 
-Y ou may also want to npm link if you'd like changes to the wasm worklet
+You may also want to npm link if you'd like changes to the wasm worklet
 package to update the demo without requiring calling `npm install` again:
 
 In the parent (the root of `wasm-audio-worklet`):
@@ -21,6 +21,9 @@ In this directory:
 ```
 npm link wasm-audio-worklet
 ```
+
+### Install a sound file
+- Save a sound file in `./public/sound-file.wav`
 
 ## Running the demo:
 ```

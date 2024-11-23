@@ -6,7 +6,20 @@
     <title>Rust -> Wasm -> AudioWorklet Demo</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div>
+        <h1>Rust -> Wasm -> AudioWorklet Demo</h1>
+    </div>
+    <div>
+        <p>
+            Demo of an AudioWorkletNode which calls a WASM module to do DSP.
+            <br/>
+            WASM here is compiled from Rust.
+            <br/>
+            Click 'play' to load a sound file (assuming there is a file saved in
+            `./public/sound-file.wav`) and loop it forever.
+        </p>
+        <button id="play">play</button>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
