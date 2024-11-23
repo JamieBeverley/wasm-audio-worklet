@@ -1,15 +1,16 @@
 class GranularNode extends AudioWorkletNode {
 
+    private wasmTimeoutMs:number;
 
     static WORKLET_PATH = new URL('./worklet.js', import.meta.url).href
     static WASM_PATH = new URL('./rust_wasm.wasm', import.meta.url).href
 
-    constructor(audioContext, wasmTimeoutMs=5000) {
+    constructor(audioContext:AudioContext, wasmTimeoutMs=5000) {
         super(audioContext, "WasmProcessor")
         this.wasmTimeoutMs = wasmTimeoutMs
     }
 
-    static async initAsync(audioContext, buffer){
+    static async initAsync(audioContext:AudioContext, buffer:AudioBuffer){
         await audioContext.audioWorklet.addModule(GranularNode.WORKLET_PATH);
         const node = new GranularNode(audioContext);
         await node.load(buffer);
@@ -20,7 +21,7 @@ class GranularNode extends AudioWorkletNode {
         const response = await window.fetch(GranularNode.WASM_PATH);
         const wasmBytes = await response.arrayBuffer();
 
-        let initCompletePromise = new Promise((res, rej) => {
+        let initCompletePromise = new Promise<void>((res, rej) => {
             const rejTimeout = setTimeout(() => {
                 rej("Timeout waiting for wasm to initialize")
             }, this.wasmTimeoutMs);
@@ -28,7 +29,6 @@ class GranularNode extends AudioWorkletNode {
                 console.log('js received: ', data.type)
                 if (data.type === 'init-wasm-complete') {
                     clearInterval(rejTimeout);
-                    this.port.onmessage = undefined;
                     res();
                 }
             };
@@ -39,11 +39,10 @@ class GranularNode extends AudioWorkletNode {
         return this;
     }
 
-    async loadBuffer(buffer) {
-        let initCompletePromise = new Promise((res, rej) => {
+    async loadBuffer(buffer:AudioBuffer) {
+        let initCompletePromise = new Promise<void>((res) => {
             this.port.onmessage = ({ data }) => {
                 if (data.type === 'init-buffer-complete') {
-                    this.port.onmessage = undefined;
                     res();
                 }
             }
@@ -59,7 +58,7 @@ class GranularNode extends AudioWorkletNode {
         return this;
     }
 
-    async load(buffer){
+    async load(buffer:AudioBuffer){
         await this.loadWasm();
         await this.loadBuffer(buffer);
         return this;

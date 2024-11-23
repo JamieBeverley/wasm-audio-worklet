@@ -10,14 +10,14 @@ export default defineConfig({
     ],
     build: {
         lib: {
-            entry: resolve(__dirname, 'src/index.js'), // Set entry point
+            entry: resolve(__dirname, 'src/index.ts'), // Set entry point
             name: 'wasm-audio-worklet',
             fileName: 'wasm-audio-worklet',
         },
         copyPublicDir: true,
         sourcemap: true,
         rollupOptions: {
-            input: resolve(__dirname, 'src/index.js'),
+            input: resolve(__dirname, 'src/index.ts'),
             output: [
                 {
                     dir: 'dist', // Output directory for npm package
@@ -34,13 +34,6 @@ export default defineConfig({
         },
         assetsInlineLimit: 0, // Prevents wasm files from being inlined, ensuring they are included as separate assets
         assetsDir: "public",
-        assetsInclude: [
-            "**/*.static.js",
-            "src/assets/*",
-            "src/pkg/*",
-            "./src/worklet.static.js",  
-            "public/*",
-        ],
     },
     resolve: {
         alias: {
