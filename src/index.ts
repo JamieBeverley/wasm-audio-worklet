@@ -26,7 +26,6 @@ class GranularNode extends AudioWorkletNode {
                 rej("Timeout waiting for wasm to initialize")
             }, this.wasmTimeoutMs);
             this.port.onmessage = ({ data }) => {
-                console.log('js received: ', data.type)
                 if (data.type === 'init-wasm-complete') {
                     clearInterval(rejTimeout);
                     res();

@@ -1,27 +1,7 @@
 class WasmProcessor extends AudioWorkletProcessor {
 
     static get parameterDescriptors() {
-        return [
-            // All 3 of these: k-rate for now...
-            {
-                name: "start",
-                defaultValue: 0,
-                minValue: 0,
-                maxValue: 1,
-            },
-            {
-                name: "grainDuration",
-                defaultValue: 0.005,
-                minValue: 0,
-                maxValue: 1,
-            },
-            {
-                name: "range",
-                defaultValue: 0,
-                minValue: 0,
-                maxValue: 1,
-            }
-        ]
+        return []
     }
 
 
@@ -118,13 +98,6 @@ class WasmProcessor extends AudioWorkletProcessor {
         ) {
             return true;
         }
-
-        // k-rate for now...
-        this._wasm.synth_set_k_rate_params(
-            parameters["start"][0],
-            parameters["grainDuration"][0],
-            parameters["range"][0],
-        )
 
         // 1. Copy input data to t`this._inPtr`
         this._inBuf.set(inputs[0][0]) // array index may not be correct

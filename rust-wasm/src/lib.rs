@@ -1,15 +1,12 @@
 use std::usize;
 
-use simple_random::SimpleRNG;
 use std::sync::{LazyLock, Mutex};
 mod constant;
 mod looper;
-mod simple_random;
 use constant::BLOCK_SIZE;
-use looper::{GranularSynthesizer, SamplePlayer};
+use looper::{Looper, SamplePlayer};
 
-static RNG: LazyLock<Mutex<SimpleRNG>> = LazyLock::new(|| Mutex::new(SimpleRNG::new(5)));
-static SYNTH: LazyLock<Mutex<GranularSynthesizer>> = LazyLock::new(|| Mutex::new(GranularSynthesizer::new()));
+static SYNTH: LazyLock<Mutex<Looper>> = LazyLock::new(|| Mutex::new(Looper::new()));
 
 #[no_mangle]
 pub extern "C" fn alloc(size: usize) -> *mut f32 {
@@ -46,14 +43,4 @@ pub extern "C" fn process(in_ptr: *mut f32, out_ptr: *mut f32) -> bool {
 pub extern "C" fn synth_set_buffer(buffer: *mut f32, size: usize) {
     let mut synth = SYNTH.lock().unwrap();
     synth.set_buffer(buffer, size);
-}
-
-#[no_mangle]
-pub extern "C" fn synth_set_k_rate_params(
-    start: f32, 
-    grain_duration:f32,
-    range:f32,
-) {
-    let mut synth = SYNTH.lock().unwrap();
-    synth.set_k_rate_params(start, grain_duration, range);
 }
