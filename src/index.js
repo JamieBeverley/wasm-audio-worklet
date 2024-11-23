@@ -1,14 +1,12 @@
 class GranularNode extends AudioWorkletNode {
 
+
     static WORKLET_PATH = new URL('./worklet.js', import.meta.url).href
     static WASM_PATH = new URL('./rust_wasm.wasm', import.meta.url).href
 
-    constructor(audioContext) {
+    constructor(audioContext, wasmTimeoutMs=5000) {
         super(audioContext, "WasmProcessor")
-    }
-
-    connect(...args){
-        return super.connect(...args)
+        this.wasmTimeoutMs = wasmTimeoutMs
     }
 
     static async initAsync(audioContext, buffer){
@@ -25,7 +23,7 @@ class GranularNode extends AudioWorkletNode {
         let initCompletePromise = new Promise((res, rej) => {
             const rejTimeout = setTimeout(() => {
                 rej("Timeout waiting for wasm to initialize")
-            }, 10000);
+            }, this.wasmTimeoutMs);
             this.port.onmessage = ({ data }) => {
                 console.log('js received: ', data.type)
                 if (data.type === 'init-wasm-complete') {

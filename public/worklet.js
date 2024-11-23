@@ -54,8 +54,6 @@ class WasmProcessor extends AudioWorkletProcessor {
         this._outPtr = this._wasm.alloc_block();
 
 
-        // TODO remove soon...
-        // const length = 1152000;
         this._sampleBufferPtr = this._wasm.alloc(bufferLength);
         this._sampleArray = new Float32Array(
             this._wasm.memory.buffer,
@@ -66,8 +64,8 @@ class WasmProcessor extends AudioWorkletProcessor {
 
         this._inBuf = new Float32Array(
             // but `memory` isn't exported from rust, where does it come from?
-            // ChatGPT says when you allocate dynamic memory in wasm, this `memory`
-            // object gets defined on `exports`. (TODO validate? read?)
+            // ChatGPT says when you allocate dynamic memory in wasm, this 
+            // `memory` object gets defined on `exports`. (TODO validate? read?)
             this._wasm.memory.buffer,
             this._inPtr,
             this._block_size
@@ -83,19 +81,21 @@ class WasmProcessor extends AudioWorkletProcessor {
         if (data.type === 'init-wasm') {
             const instance = async () => {
                 const memory = new WebAssembly.Memory({
-                    initial: 20,    // 3 pages of 64KB each (3 * 64KB = 192KB initial memory)
-                    maximum: 20     // Limit memory growth to 3 pages
+                     // TODO totally arbitrary, perhaps parametrize in post
+                     // message or consider a reasonable default.
+                    initial: 3
                 });
 
-                // Create an import object to pass to the WebAssembly module
                 const imports = {
                     env: {
                         memory: memory,
-                        // Add any other necessary imports
                     }
                 };
 
-                this._wasm = (await WebAssembly.instantiate(data.wasmBytes, imports)).instance.exports;
+                this._wasm = (await WebAssembly.instantiate(
+                    data.wasmBytes, imports
+                )).instance.exports;
+
                 this.port.postMessage({ type: "init-wasm-complete" });
             }
             instance();
@@ -118,11 +118,7 @@ class WasmProcessor extends AudioWorkletProcessor {
         ) {
             return true;
         }
-        // console.log(
-            // parameters["start"][0],
-            // parameters["grainDuration"][0],
-            // parameters["range"][0],
-        // )
+
         // k-rate for now...
         this._wasm.synth_set_k_rate_params(
             parameters["start"][0],
@@ -137,8 +133,9 @@ class WasmProcessor extends AudioWorkletProcessor {
         // bytes to read/process
         this._wasm.process(this._inPtr, this._outPtr, this._block_size);
         // 3. copy the processed values back over to the worklet output array
-        // NOTE: unfortunately a `set` here (which copies values, not references) is
-        // unavoidable. Still probably faster than iterating over every sample.
+        // NOTE: unfortunately a `set` here (which copies values, not
+        // references) is unavoidable. Still probably faster than iterating over
+        // every sample.
         outputs[0][0].set(this._outBuf)
 
         return true;
