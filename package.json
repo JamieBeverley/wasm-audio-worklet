@@ -1,4 +1,4 @@
- {
+{
   "name": "wasm-audio-worklet",
   "version": "1.0.0",
   "description": "",
@@ -8,6 +8,7 @@
     "dist/",
     "public/"
   ],
+  "types": "dist/index.d.ts",
   "scripts": {
     "build-wasm": "cd rust-wasm && cargo build --target wasm32-unknown-unknown --release",
     "install-wasm": "cp rust-wasm/target/wasm32-unknown-unknown/release/rust_wasm.wasm ./public/rust_wasm.wasm",
@@ -18,8 +19,9 @@
   "author": "Jamie Beverley",
   "license": "MIT",
   "devDependencies": {
-    "vite": "^5.4.10",
     "typescript": "~5.6.2",
+    "vite": "^5.4.10",
+    "vite-plugin-dts": "^4.3.0",
     "vite-plugin-top-level-await": "^1.4.4",
     "vite-plugin-wasm": "^3.3.0"
   }

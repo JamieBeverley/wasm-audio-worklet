@@ -2,11 +2,13 @@ import { defineConfig } from 'vite'
 import { resolve } from 'path'
 import wasm from 'vite-plugin-wasm'
 import topLevelAwait from 'vite-plugin-top-level-await'
+import dts from "vite-plugin-dts";
 
 export default defineConfig({
     plugins: [
         wasm(),            // Allows importing .wasm files
         topLevelAwait(),   // Enables using top-level await with .wasm modules if needed
+        dts(), // TypeScript types
     ],
     build: {
         lib: {
@@ -16,22 +18,6 @@ export default defineConfig({
         },
         copyPublicDir: true,
         sourcemap: true,
-        rollupOptions: {
-            input: resolve(__dirname, 'src/index.ts'),
-            output: [
-                {
-                    dir: 'dist', // Output directory for npm package
-                    format: 'es', // ES module format
-                    entryFileNames: 'wasm-audio-worklet.mjs', // Output filename for UMD
-                },
-                {
-                    format: 'umd', // UMD format for compatibility
-                    name: 'wasm-audio-worklet', // Name for UMD export
-                    dir: 'dist',
-                    entryFileNames: 'wasm-audio-worklet.umd.js', // Output filename for UMD
-                }
-            ]
-        },
         assetsInlineLimit: 0, // Prevents wasm files from being inlined, ensuring they are included as separate assets
         assetsDir: "public",
     },

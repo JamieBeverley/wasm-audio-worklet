@@ -1,5 +1,4 @@
 import './style.css'
-// @ts-ignore TODO: emit types from wasm-audio-worklet
 import GranularNode from 'wasm-audio-worklet';
 import WebMidiController from "./midi"
 
@@ -111,13 +110,12 @@ function initButton() {
         const node = await GranularNode.initAsync(ac, buffer);
 
         osc.connect(node);
-        // @ts-ignore TODO: emit types from wasm-audio-worklet
         node.connect(ac.destination);
 
         createInteractive3DSVG(app, 300, 300, (x, y, z) => {
-            node.parameters.get('start').setValueAtTime(x, ac.currentTime);
-            node.parameters.get('range').setValueAtTime(y**3, ac.currentTime);
-            node.parameters.get('grainDuration').setValueAtTime(z, ac.currentTime);
+            node.parameters.get('start')?.setValueAtTime(x, ac.currentTime);
+            node.parameters.get('range')?.setValueAtTime(y**3, ac.currentTime);
+            node.parameters.get('grainDuration')?.setValueAtTime(z, ac.currentTime);
         });
     });
 
