@@ -9,8 +9,8 @@
     "public/"
   ],
   "scripts": {
-    "build-wasm": "cd rust-wasm && cargo build --target wasm32-unknown-unknown",
-    "install-wasm": "cp rust-wasm/target/wasm32-unknown-unknown/debug/rust_wasm.wasm ./public/rust_wasm.wasm",
+    "build-wasm": "cd rust-wasm && cargo build --target wasm32-unknown-unknown --release",
+    "install-wasm": "cp rust-wasm/target/wasm32-unknown-unknown/release/rust_wasm.wasm ./public/rust_wasm.wasm",
     "build": "npm run build-wasm && npm run install-wasm && vite build && npm run build-demo",
     "build-demo": "cd demo && npm run build"
   },

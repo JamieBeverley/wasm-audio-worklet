@@ -29,13 +29,6 @@ pub extern "C" fn alloc_block() -> *mut f32 {
 }
 
 #[no_mangle]
-pub extern "C" fn get_sample() -> f32 {
-    let mut rng = RNG.lock().unwrap();
-    let item = rng.next_f32();
-    item
-}
-
-#[no_mangle]
 pub extern "C" fn process(in_ptr: *mut f32, out_ptr: *mut f32) -> bool {
     let out_buf: &mut [f32] = unsafe { std::slice::from_raw_parts_mut(out_ptr, BLOCK_SIZE) };
     let _in_buf: &mut [f32] = unsafe { std::slice::from_raw_parts_mut(in_ptr, BLOCK_SIZE) };
