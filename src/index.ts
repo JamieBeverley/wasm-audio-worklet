@@ -1,4 +1,8 @@
-class GranularNode extends AudioWorkletNode {
+class NodePool implements AudioWorkletNode {
+
+}
+
+class WasmNode extends AudioWorkletNode {
 
     private wasmTimeoutMs:number;
 
@@ -11,14 +15,14 @@ class GranularNode extends AudioWorkletNode {
     }
 
     static async initAsync(audioContext:AudioContext, buffer:AudioBuffer){
-        await audioContext.audioWorklet.addModule(GranularNode.WORKLET_PATH);
-        const node = new GranularNode(audioContext);
+        await audioContext.audioWorklet.addModule(WasmNode.WORKLET_PATH);
+        const node = new WasmNode(audioContext);
         await node.load(buffer);
         return node
     }
 
     async loadWasm() {
-        const response = await window.fetch(GranularNode.WASM_PATH);
+        const response = await window.fetch(WasmNode.WASM_PATH);
         const wasmBytes = await response.arrayBuffer();
 
         let initCompletePromise = new Promise<void>((res, rej) => {
@@ -64,4 +68,4 @@ class GranularNode extends AudioWorkletNode {
     }
 }
 
-export default GranularNode;
+export default WasmNode;
