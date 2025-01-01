@@ -1,7 +1,3 @@
-class NodePool implements AudioWorkletNode {
-
-}
-
 class WasmNode extends AudioWorkletNode {
 
     private wasmTimeoutMs:number;
