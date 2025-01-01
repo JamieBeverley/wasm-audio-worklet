@@ -10,8 +10,8 @@
   ],
   "types": "dist/index.d.ts",
   "scripts": {
-    "build-wasm": "cd rust-wasm && cargo build --target wasm32-unknown-unknown --release",
-    "install-wasm": "cp rust-wasm/target/wasm32-unknown-unknown/release/rust_wasm.wasm ./public/rust_wasm.wasm",
+    "build-wasm": "cd crates && cargo build --target wasm32-unknown-unknown --release",
+    "install-wasm": "cp crates/target/wasm32-unknown-unknown/release/buffer_looper.wasm ./public/buffer_looper.wasm",
     "build": "npm run build-wasm && npm run install-wasm && vite build && npm run build-demo",
     "build-demo": "cd demo && npm run build"
   },

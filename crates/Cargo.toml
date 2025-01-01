@@ -1,0 +1,4 @@
+[workspace]
+members = [
+    "buffer_looper", "common",
+]

@@ -1,5 +1,5 @@
 import './style.css'
-import WasmNode from 'wasm-audio-worklet';
+import {BufferLooper} from 'wasm-audio-worklet';
 
 async function initButton() {
     const ac = new AudioContext();
@@ -9,7 +9,7 @@ async function initButton() {
 
     const response = await fetch("sound-file.wav");
     const buffer = await ac.decodeAudioData(await response.arrayBuffer());
-    const node = await WasmNode.initAsync(ac, buffer);
+    const node = await BufferLooper.initAsync(ac, buffer);
     
     osc.connect(node);
     node.connect(ac.destination);

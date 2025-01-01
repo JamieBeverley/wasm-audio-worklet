@@ -1,4 +1,4 @@
-use crate::constant::BLOCK_SIZE;
+use common::{BLOCK_SIZE};
 mod play_head;
 use play_head::{PlayHead, SimplePlayHead};
 

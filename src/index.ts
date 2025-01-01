@@ -1,24 +1,17 @@
-class WasmNode extends AudioWorkletNode {
+abstract class WasmNode extends AudioWorkletNode {
 
     private wasmTimeoutMs:number;
 
     static WORKLET_PATH = new URL('./worklet.js', import.meta.url).href
-    static WASM_PATH = new URL('./rust_wasm.wasm', import.meta.url).href
+    abstract WASM_PATH:string;
 
     constructor(audioContext:AudioContext, wasmTimeoutMs=5000) {
         super(audioContext, "WasmProcessor")
         this.wasmTimeoutMs = wasmTimeoutMs
     }
 
-    static async initAsync(audioContext:AudioContext, buffer:AudioBuffer){
-        await audioContext.audioWorklet.addModule(WasmNode.WORKLET_PATH);
-        const node = new WasmNode(audioContext);
-        await node.load(buffer);
-        return node
-    }
-
     async loadWasm() {
-        const response = await window.fetch(WasmNode.WASM_PATH);
+        const response = await window.fetch(this.WASM_PATH);
         const wasmBytes = await response.arrayBuffer();
 
         let initCompletePromise = new Promise<void>((res, rej) => {
@@ -57,6 +50,18 @@ class WasmNode extends AudioWorkletNode {
         return this;
     }
 
+}
+
+class BufferLooper extends WasmNode {
+    
+    WASM_PATH = new URL('./buffer_looper.wasm', import.meta.url).href
+
+    static async initAsync(audioContext:AudioContext, buffer:AudioBuffer){
+        await audioContext.audioWorklet.addModule(WasmNode.WORKLET_PATH);
+        const node = new BufferLooper(audioContext);
+        await node.load(buffer);
+        return node
+    }
     async load(buffer:AudioBuffer){
         await this.loadWasm();
         await this.loadBuffer(buffer);
@@ -64,4 +69,4 @@ class WasmNode extends AudioWorkletNode {
     }
 }
 
-export default WasmNode;
+export {BufferLooper};

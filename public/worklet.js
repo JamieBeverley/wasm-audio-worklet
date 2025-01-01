@@ -4,7 +4,6 @@ class WasmProcessor extends AudioWorkletProcessor {
         return []
     }
 
-
     constructor() {
         super();
         this._wasm = null;
