@@ -13,12 +13,11 @@ async function initButton() {
     const bufferNode = await BufferLooper.build(ac);
     bufferNode.loadBuffer(buffer);
     const bitCrusher = await BitCrusher.build(ac);
-    console.log(bitCrusher);
 
     // TODO: remind myself why this is required (we're not actually processing 
     // this but the `.start` seems to do something?)
     osc.connect(bufferNode)
-    
+
     // bufferNode.connect(ac.destination);
     bufferNode.connect(bitCrusher);
     bitCrusher.connect(ac.destination);
