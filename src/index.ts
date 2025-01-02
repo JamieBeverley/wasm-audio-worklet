@@ -93,10 +93,18 @@ class BufferNode extends AudioWorkletNode {
 
 const BufferLooper = new WorkletModuleFactory(
     new URL('./worklets.js', import.meta.url).href,
-    "WasmProcessor",
+    "BufferLooper",
     new URL('./buffer_looper.wasm', import.meta.url).href,
     1000,
     BufferNode,
 )
 
-export {BufferLooper};
+const BitCrusher = new WorkletModuleFactory(
+    new URL('./worklets.js', import.meta.url).href,
+    "BitCrush",
+    new URL('./reduce_resolution.wasm', import.meta.url).href,
+    1000,
+    AudioWorkletNode,
+)
+
+export {BufferLooper, BitCrusher};
