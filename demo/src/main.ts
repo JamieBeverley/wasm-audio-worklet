@@ -1,5 +1,6 @@
 import './style.css'
 import {BufferLooper} from 'wasm-audio-worklet';
+// import {BufferLooper, BitResolutionCrusher} from 'wasm-audio-worklet';
 
 async function initButton() {
     const ac = new AudioContext();
@@ -9,10 +10,14 @@ async function initButton() {
 
     const response = await fetch("sound-file.wav");
     const buffer = await ac.decodeAudioData(await response.arrayBuffer());
-    const node = await BufferLooper.initAsync(ac, buffer);
+    const bufferNode = new BufferLooper(ac);
+    debugger;
+    await bufferNode.load(buffer);
+    // const crushNode = new BitResolutionCrusher(ac);
+    // crushNode.load();
     
-    osc.connect(node);
-    node.connect(ac.destination);
+    osc.connect(bufferNode);
+    bufferNode.connect(ac.destination);
 }
 
 const button = document.querySelector<HTMLButtonElement>('#play') as HTMLButtonElement;

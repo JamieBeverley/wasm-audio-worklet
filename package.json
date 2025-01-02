@@ -11,7 +11,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build-wasm": "cd crates && cargo build --target wasm32-unknown-unknown --release",
-    "install-wasm": "cp crates/target/wasm32-unknown-unknown/release/buffer_looper.wasm ./public/buffer_looper.wasm",
+    "install-wasm": "cp crates/target/wasm32-unknown-unknown/release/*.wasm public/",
     "build": "npm run build-wasm && npm run install-wasm && vite build && npm run build-demo",
     "build-demo": "cd demo && npm run build"
   },

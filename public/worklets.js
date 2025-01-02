@@ -1,4 +1,4 @@
-class WasmProcessor extends AudioWorkletProcessor {
+class BufferLooper extends AudioWorkletProcessor {
 
     static get parameterDescriptors() {
         return []
@@ -114,4 +114,4 @@ class WasmProcessor extends AudioWorkletProcessor {
 
 }
 
-registerProcessor('WasmProcessor', WasmProcessor);
+registerProcessor('WasmProcessor', BufferLooper);

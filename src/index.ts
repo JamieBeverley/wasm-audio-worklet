@@ -1,8 +1,34 @@
+class WorkletModuleFactory {
+   
+    private workletPath:string;
+
+    constructor(workletPath:string){
+        this.workletPath = workletPath;
+    }
+    
+    async createInstance<
+      T,Args extends [AudioContext,...any[]]
+    >(
+        ctor: new (...args: Args) => T,
+        args:Args
+    ): Promise<T> {
+        const audioContext = args[0];
+        await this.addWorkletModule(audioContext);
+        const instance = new ctor(...args);
+        return instance
+    }
+
+    private async addWorkletModule(audioContext:AudioContext){
+        return await audioContext.audioWorklet.addModule(this.workletPath);
+    }
+}
+
 abstract class WasmNode extends AudioWorkletNode {
 
+    static workletFactory = new WorkletModuleFactory(new URL('./worklets.js', import.meta.url).href)
+    // static WORKLET_PATH = new URL('./worklets.js', import.meta.url).href
+    // static WORKLET_LOADED = false;
     private wasmTimeoutMs:number;
-
-    static WORKLET_PATH = new URL('./worklet.js', import.meta.url).href
     abstract WASM_PATH:string;
 
     constructor(audioContext:AudioContext, wasmTimeoutMs=5000) {
@@ -10,8 +36,18 @@ abstract class WasmNode extends AudioWorkletNode {
         this.wasmTimeoutMs = wasmTimeoutMs
     }
 
-    async loadWasm() {
-        const response = await window.fetch(this.WASM_PATH);
+    static async build(
+        ...args:ConstructorParameters<typeof WasmNode>
+    ): Promise<WasmNode>{
+        const instance = await this.workletFactory.createInstance((...args) => {
+            const x = new this(args);
+            return x as unknown as typeof WasmNode;
+        }, args)
+        return instance;
+    }
+
+    protected async loadWasm() {
+        const response = await window.fetch(WasmNode.WASM_PATH);
         const wasmBytes = await response.arrayBuffer();
 
         let initCompletePromise = new Promise<void>((res, rej) => {
@@ -31,6 +67,23 @@ abstract class WasmNode extends AudioWorkletNode {
         return this;
     }
 
+    static async load(audioContext:AudioContext, ..._args:ConstructorParameters<typeof WasmNode>): Promise<WasmNode>{
+        const node = await WasmNode.build(audioContext, ..._args);
+        await node.loadWasm();
+        return node
+    }
+}
+
+class BufferLooper extends WasmNode {
+    
+    WASM_PATH = new URL('./buffer_looper.wasm', import.meta.url).href
+
+    async load(buffer:AudioBuffer){
+        await super.load();
+        await this.loadBuffer(buffer);
+        return this;
+    }
+    
     async loadBuffer(buffer:AudioBuffer) {
         let initCompletePromise = new Promise<void>((res) => {
             this.port.onmessage = ({ data }) => {
@@ -49,24 +102,10 @@ abstract class WasmNode extends AudioWorkletNode {
         await initCompletePromise;
         return this;
     }
-
 }
 
-class BufferLooper extends WasmNode {
-    
+class BitResolutionCrusher extends WasmNode {
     WASM_PATH = new URL('./buffer_looper.wasm', import.meta.url).href
-
-    static async initAsync(audioContext:AudioContext, buffer:AudioBuffer){
-        await audioContext.audioWorklet.addModule(WasmNode.WORKLET_PATH);
-        const node = new BufferLooper(audioContext);
-        await node.load(buffer);
-        return node
-    }
-    async load(buffer:AudioBuffer){
-        await this.loadWasm();
-        await this.loadBuffer(buffer);
-        return this;
-    }
 }
 
-export {BufferLooper};
+export {BufferLooper, BitResolutionCrusher};

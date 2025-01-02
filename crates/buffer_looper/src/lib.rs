@@ -2,7 +2,7 @@ use std::usize;
 
 use std::sync::{LazyLock, Mutex};
 mod looper;
-use common::{BLOCK_SIZE};
+use common::BLOCK_SIZE;
 use looper::{Looper, SamplePlayer};
 
 static SYNTH: LazyLock<Mutex<Looper>> = LazyLock::new(|| Mutex::new(Looper::new()));
