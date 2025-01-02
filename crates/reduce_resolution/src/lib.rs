@@ -4,7 +4,7 @@ const CRUSH_PARAM:f32 = 4.0;
 
 const BASE:f32 = 2.0;
 
-// pub use common::alloc_block;
+pub use common::alloc_block;
 
 #[no_mangle]
 pub extern "C" fn process(in_ptr: *mut f32, out_ptr: *mut f32) -> bool {

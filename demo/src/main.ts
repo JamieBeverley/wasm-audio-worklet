@@ -18,9 +18,10 @@ async function initButton() {
     // TODO: remind myself why this is required (we're not actually processing 
     // this but the `.start` seems to do something?)
     osc.connect(bufferNode)
-    bufferNode.connect(ac.destination);
-    // bufferNode.connect(bitCrusher);
-    // bitCrusher.connect(ac.destination);
+    
+    // bufferNode.connect(ac.destination);
+    bufferNode.connect(bitCrusher);
+    bitCrusher.connect(ac.destination);
 }
 
 const button = document.querySelector<HTMLButtonElement>('#play') as HTMLButtonElement;

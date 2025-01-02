@@ -141,7 +141,7 @@ class BitCrush extends AudioWorkletProcessor {
         this.port.onmessage = event => this.onmessage(event.data);
     }
 
-    alloc_memory(bufferLength) {
+    alloc_memory() {
         // allocates the heap memory for rust, returns a pointer to it.
         // NOTE: we may need/want to do this multiple times, once per
         //      channel per in/out?
@@ -187,13 +187,13 @@ class BitCrush extends AudioWorkletProcessor {
 
                 this.port.postMessage({ type: "init-wasm-complete" });
             }
-            instance();
+            instance().then(() => this.alloc_memory());
         }
     }
 
     process(inputs, outputs, parameters) {
         if (
-            this._wasm === null || (inputs[0][0] === undefined)
+            this._wasm === null || (inputs[0][0] === undefined) || this._inBuf === null
         ) {
             return true;
         }
