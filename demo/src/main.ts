@@ -10,9 +10,8 @@ async function initButton() {
 
     const response = await fetch("sound-file.wav");
     const buffer = await ac.decodeAudioData(await response.arrayBuffer());
-    const bufferNode = new BufferLooper(ac);
-    debugger;
-    await bufferNode.load(buffer);
+    const bufferNode = await BufferLooper.build(ac);
+    bufferNode.loadBuffer(buffer);
     // const crushNode = new BitResolutionCrusher(ac);
     // crushNode.load();
     
