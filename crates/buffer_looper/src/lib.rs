@@ -7,7 +7,8 @@ use looper::{Looper, SamplePlayer};
 
 static SYNTH: LazyLock<Mutex<Looper>> = LazyLock::new(|| Mutex::new(Looper::new()));
 
-pub use common::alloc_block;
+
+pub use common::alloc;
 
 #[no_mangle]
 pub extern "C" fn process(in_ptr: *mut f32, out_ptr: *mut f32) -> bool {

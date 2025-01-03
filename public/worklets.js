@@ -84,7 +84,6 @@ class WasmProcessor extends AudioWorkletProcessor {
         super();
         this._wasm = undefined;
         this._wasmMemory = undefined
-
         this.port.onmessage = event => this.onmessage(event.data);
     }
 
@@ -113,8 +112,15 @@ class WasmProcessor extends AudioWorkletProcessor {
 
     alloc_memory() {
         this._wasmMemory = new WasmMemory(this._wasm);
+        // TODO multiply by channel counts eventually
         this._wasmMemory.alloc("inBuffer", BLOCK_SIZE)
         this._wasmMemory.alloc("outBuffer", BLOCK_SIZE)
+
+        // alloc a BLOCK_SIZE buffer for each parameter
+        const parameters = this.parameterDescriptors;
+        parameters.forEach(({name}) => {
+            this._wasmMemory.alloc(this.getParamBufferName(name), BLOCK_SIZE);
+        })
     }
 
     async initWasm(data) {
@@ -145,6 +151,11 @@ class WasmProcessor extends AudioWorkletProcessor {
         }
     }
 
+    getParamBufferName(paramName){
+        // to reduce likelihood of possible naming collision
+        return `__param__${paramName}`
+    }
+
     process(inputs, outputs, parameters) {
         if (
             this._wasm === undefined ||
@@ -152,6 +163,11 @@ class WasmProcessor extends AudioWorkletProcessor {
         ) {
             return true;
         }
+
+        // TODO handle k-rate separately?
+        Object.keys(parameters).forEach(paramName => {
+            this._wasmMemory.buffers[this.getParamBufferName(paramName)].buffer.set(parameters[paramName])
+        })
         this._wasmMemory.buffers.inBuffer.buffer.set(inputs[0][0]) // array index may not be correct
         this._wasm.process(
             this._wasmMemory.buffers.inBuffer.ptr,
