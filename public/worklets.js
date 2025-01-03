@@ -1,18 +1,12 @@
 const BLOCK_SIZE = 128;
 
 class WasmBuffer {
-    constructor(size) {
-        this.ptr = null;
-        this.buffer = null;
-        this.size = size;
-    }
-
-    alloc(wasm) {
-        this.ptr = wasm.alloc(this.size);
+    constructor(size, wasm) {
+        this.ptr = wasm.alloc(size);
         this.buffer = new Float32Array(
             wasm.memory.buffer,
             this.ptr,
-            this.size
+            size
         );
     }
 }
@@ -27,16 +21,15 @@ class WasmProcessor extends AudioWorkletProcessor {
         super();
         this._wasm = null;
 
-        // TODO channels. parameterize BLOCK_SIZE
-        this.inBuffer = new WasmBuffer(BLOCK_SIZE);
-        this.outBuffer = new WasmBuffer(BLOCK_SIZE);
+        this.inBuffer = null;
+        this.outBuffer = null;
 
         this.port.onmessage = event => this.onmessage(event.data);
     }
 
     alloc_memory() {
-        this.inBuffer.alloc(this._wasm);
-        this.outBuffer.alloc(this._wasm);
+        this.inBuffer = new WasmBuffer(BLOCK_SIZE, this._wasm);
+        this.outBuffer = new WasmBuffer(BLOCK_SIZE, this._wasm);
     }
 
     async initWasm(data) {
@@ -100,11 +93,9 @@ class BufferLooper extends WasmProcessor {
     }
 
     _alloc_memory(bufferLength){
-        this.sampleBuffer = new WasmBuffer(bufferLength);
-        this.sampleBuffer.alloc(this._wasm);
-        this.inBuffer.alloc(this._wasm);
-        this.outBuffer.alloc(this._wasm);
-
+        this.sampleBuffer = new WasmBuffer(bufferLength, this._wasm);
+        this.inBuffer = new WasmBuffer(BLOCK_SIZE, this._wasm);
+        this.outBuffer = new WasmBuffer(BLOCK_SIZE, this._wasm);
     }
 
     initBuffer(data){
