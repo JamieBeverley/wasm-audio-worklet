@@ -17,7 +17,7 @@ class WasmBuffer {
 class WasmMemory {
     constructor(wasm) {
         this.wasm = wasm
-        this.buffers = {}; // {str: WasmBuffer}
+        this.buffers = {}; // {[k:string]: WasmBuffer}
     }
 
     getWasmBufferLength() {
@@ -30,58 +30,44 @@ class WasmMemory {
             .reduce((acc, wasmBuffer) => acc + wasmBuffer.buffer.byteLength, 0)
     }
 
-    grow(bytes) {
-        const BYTES_PER_PAGE = 65536;
-        const pagesToGrow = Math.ceil(bytes / BYTES_PER_PAGE);
-        this.wasm.memory.grow(pagesToGrow)
-
-        // When we grow all prior buffers will be transfered and readonly.
-        // So we need to re-create views on the regrown wasm memory.
-        // (grow sparingly!)
-        Object.keys(this.buffers).forEach(bufferName => {
-            this.buffers[bufferName] = new WasmBuffer(
-                this.buffers[bufferName].buffer.bufferLength,
-                this.wasm
-            )
-        });
+    getBufferLengths() {
+        return Object
+            .keys(this.buffers)
+            .reduce((acc, bufferName) => (
+                {
+                    ...acc,
+                    [bufferName]: this.buffers[bufferName].buffer.length
+                }
+            ), {});
     }
 
     alloc(name, size) {
         const beforeSize = this.getWasmBufferLength();
+
+        // If wasm memory grows, we need to re-create old views on the memory.
+        // We need to store the size of that memory before grow happens because
+        // if a grow does occur, these buffers will have 0 length.
+        const bufferLengths = this.getBufferLengths();
+
         this.buffers[name] = new WasmBuffer(size, this.wasm);
         const afterSize = this.getWasmBufferLength();
         if (beforeSize !== afterSize) {
             // When we grow all prior buffers will be transfered and readonly.
             // So we need to re-create views on the regrown wasm memory.
             // (grow sparingly!)
-            Object
+            const rebuildBufferNames = Object
                 .keys(this.buffers)
-                // Don't re-create the one we just created.
                 .filter(bufferName => name !== bufferName)
+
+            rebuildBufferNames
                 .forEach(bufferName => {
+                    console.log(this.buffers[bufferName].buffer)
                     this.buffers[bufferName] = new WasmBuffer(
-                        this.buffers[bufferName].buffer.bufferLength,
-                        this.wasm
+                        bufferLengths[bufferName],
+                        this.wasm,
                     )
                 });
         }
-    }
-
-    alloc2(name, size) {
-        const currentSize = this.getWasmBufferLength();
-        const allocated = this.getAllocatedLength();
-        const remainingSize = currentSize - allocated;
-        const diff = size - remainingSize;
-        console.log("______________________")
-        console.log("current size:", currentSize, "allocated:", allocated, "remaining:", remainingSize, 'requested:', size)
-        console.log("deficit:", diff)
-        if (diff > 0) {
-            console.log('growing...')
-            this.grow(diff);
-        }
-        else console.log("not growing...")
-
-        this.buffers[name] = new WasmBuffer(size, this.wasm)
     }
 }
 
@@ -102,6 +88,29 @@ class WasmProcessor extends AudioWorkletProcessor {
         this.port.onmessage = event => this.onmessage(event.data);
     }
 
+    logBuffers(where = "") {
+        try {
+            console.group("logBuffers", where)
+            if (this._wasmMemory === undefined) {
+                console.log("wasmMemory === undefined");
+                return
+            } else {
+                Object.keys(this._wasmMemory.buffers).forEach(bufferName => {
+                    const buffer = this._wasmMemory.buffers[bufferName];
+                    console.log(
+                        bufferName,
+                        " - length:",
+                        buffer.buffer.length,
+                        "byteLength:",
+                        buffer.buffer.byteLength
+                    );
+                })
+            }
+        } finally {
+            console.groupEnd();
+        }
+    }
+
     alloc_memory() {
         this._wasmMemory = new WasmMemory(this._wasm);
         this._wasmMemory.alloc("inBuffer", BLOCK_SIZE)
@@ -109,13 +118,9 @@ class WasmProcessor extends AudioWorkletProcessor {
     }
 
     async initWasm(data) {
-        const memory = new WebAssembly.Memory({
-            // TODO totally arbitrary, perhaps parametrize in post
-            // message or consider a reasonable default.
-            initial: 1
-        });
+        // TODO: consider increasing if pages resizes pretty much always happen
+        const memory = new WebAssembly.Memory({ initial: 1 });
         memory.buffer.byteLength
-
         const imports = { env: { memory: memory } };
 
         this._wasm = (await WebAssembly.instantiate(
@@ -163,32 +168,9 @@ class WasmProcessor extends AudioWorkletProcessor {
 ////////////////////////////////////////////////////////////////////////////////
 class BufferLooper extends WasmProcessor {
 
-    alloc_memory(bufferLength) {
-        // TODO a bit ugly, but changing alloc_memory to a no-op so that it can
-        // be done in initBuffer (because we need the sample buffer to alloc
-        // memory)
-        // Can probably be undone after figuring out proper memory management of
-        // buffers (why does the order matter?)
-        // Hypothesis: usually when we allocate the sample buffer the wasm
-        // memory needs to grow. When wasm memory grows, the previous buffers
-        // are transfered and become un-usable.
-        // SO: any time we (re)set the sample buffer, check if memory needs to
-        // grow, if it does, re-allocate the in/out buffers as well.
-    }
-
-    _alloc_memory(bufferLength) {
-        this._wasmMemory = new WasmMemory(this._wasm);
-        // TODO: check, if we move these around do things still work? a test of 
-        // whether the memory alloc hypothesis is correct...
-        this._wasmMemory.alloc('inBuffer', BLOCK_SIZE);
-        this._wasmMemory.alloc('outBuffer', BLOCK_SIZE);
-        this._wasmMemory.alloc('sampleBuffer', bufferLength);
-    }
-
     initBuffer(data) {
         const { length, channelData } = data.data;
-        this._alloc_memory(length);
-
+        this._wasmMemory.alloc('sampleBuffer', length);
         this._wasmMemory.buffers.sampleBuffer.buffer.set(channelData);
         this._wasm.synth_set_buffer(this._wasmMemory.buffers.sampleBuffer.ptr, length)
         this.port.postMessage({ type: "init-buffer-complete" });
