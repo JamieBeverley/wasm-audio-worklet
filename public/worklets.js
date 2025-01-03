@@ -61,7 +61,6 @@ class WasmMemory {
 
             rebuildBufferNames
                 .forEach(bufferName => {
-                    console.log(this.buffers[bufferName].buffer)
                     this.buffers[bufferName] = new WasmBuffer(
                         bufferLengths[bufferName],
                         this.wasm,
@@ -75,6 +74,10 @@ class WasmMemory {
 // WasmProcessor (default/base class)                                         //
 ////////////////////////////////////////////////////////////////////////////////
 class WasmProcessor extends AudioWorkletProcessor {
+
+    // TODO parametrize
+    inChannels = 1;
+    outChannels = 1;
 
     static get parameterDescriptors() {
         return []
@@ -117,9 +120,10 @@ class WasmProcessor extends AudioWorkletProcessor {
         this._wasmMemory.alloc("outBuffer", BLOCK_SIZE)
 
         // alloc a BLOCK_SIZE buffer for each parameter
-        const parameters = this.parameterDescriptors;
-        parameters.forEach(({name}) => {
-            this._wasmMemory.alloc(this.getParamBufferName(name), BLOCK_SIZE);
+        const parameters = this.constructor.parameterDescriptors ?? [];
+        parameters.forEach(({ name }) => {
+            const bufferName = this.getParamBufferName(name);
+            this._wasmMemory.alloc(bufferName, BLOCK_SIZE);
         })
     }
 
@@ -151,10 +155,13 @@ class WasmProcessor extends AudioWorkletProcessor {
         }
     }
 
-    getParamBufferName(paramName){
+    getParamBufferName(paramName) {
         // to reduce likelihood of possible naming collision
         return `__param__${paramName}`
     }
+
+    max = 0;
+    min = 999;
 
     process(inputs, outputs, parameters) {
         if (
@@ -164,15 +171,27 @@ class WasmProcessor extends AudioWorkletProcessor {
             return true;
         }
 
-        // TODO handle k-rate separately?
-        Object.keys(parameters).forEach(paramName => {
-            this._wasmMemory.buffers[this.getParamBufferName(paramName)].buffer.set(parameters[paramName])
+        // TODO handle k-rate separately? it feels yucky doing a 128 buffer copy
+        // when only 1 value changes
+        const parameterPtrs = Object.keys(parameters).map(paramName => {
+            const bufferName = this.getParamBufferName(paramName);
+            const wasmBuffer = this._wasmMemory.buffers[bufferName];
+            wasmBuffer.buffer.set(parameters[paramName]);
+            const val = parameters[paramName][0]
+            this.min = Math.min(val,this.min)
+            this.max = Math.max(val,this.max)
+            console.log(val,this.min,this.max)
+            return wasmBuffer.ptr;
         })
+
         this._wasmMemory.buffers.inBuffer.buffer.set(inputs[0][0]) // array index may not be correct
         this._wasm.process(
+            BLOCK_SIZE,
+            this.inChannels,
+            this.outChannels,
             this._wasmMemory.buffers.inBuffer.ptr,
             this._wasmMemory.buffers.outBuffer.ptr,
-            BLOCK_SIZE,
+            ...parameterPtrs,
         );
         outputs[0][0].set(this._wasmMemory.buffers.outBuffer.buffer)
         return true;
@@ -180,7 +199,7 @@ class WasmProcessor extends AudioWorkletProcessor {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// BufferLooper                                                               //
+// Implemented Processors                                                     //
 ////////////////////////////////////////////////////////////////////////////////
 class BufferLooper extends WasmProcessor {
 
@@ -204,8 +223,28 @@ class BufferLooper extends WasmProcessor {
 
 }
 
+class BitCrushProcessor extends WasmProcessor {
+
+    static get parameterDescriptors() {
+        return [
+            {
+                name: 'crush',
+                automationRate: 'a-rate',
+                minValue: 0,
+                // following some precedence of WAAPI - usage of f32s for audio
+                // buffers and other things
+                // 0 = no bit reduction 
+                // 32 = 32 bits of reduction
+                maxValue: 32,
+                defaultValue: 0,
+            }
+        ];
+    }
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Registering Worklets                                                       //
 ////////////////////////////////////////////////////////////////////////////////
 registerProcessor('BufferLooper', BufferLooper);
-registerProcessor('BitCrush', WasmProcessor);
+registerProcessor('BitCrush', BitCrushProcessor);

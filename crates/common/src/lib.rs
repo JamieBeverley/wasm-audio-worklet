@@ -6,7 +6,10 @@ pub const BLOCK_SIZE: usize = 128;
 // pub from the concrete wasm processor module. This is desired behavior (we
 // alloc to be defined to js) but somewhat opaque/unclear.
 // TODO: Consider removing no_mangle here and forcing client Rust to explicitly
-// re-export it with no_mangle (more clear but more duped code) 
+// re-export it with no_mangle.
+// Tradeoffs: Becomes more clear, but results in duped code (we need alloc for 
+//   every wasm audio processor, its kind of nice/clean not to have to remember
+//   to copy it over...) 
 #[no_mangle]
 pub extern "C" fn alloc(size: usize) -> *mut f32 {
 
