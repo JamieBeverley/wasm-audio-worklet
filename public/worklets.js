@@ -160,9 +160,6 @@ class WasmProcessor extends AudioWorkletProcessor {
         return `__param__${paramName}`
     }
 
-    max = 0;
-    min = 999;
-
     process(inputs, outputs, parameters) {
         if (
             this._wasm === undefined ||
@@ -177,14 +174,17 @@ class WasmProcessor extends AudioWorkletProcessor {
             const bufferName = this.getParamBufferName(paramName);
             const wasmBuffer = this._wasmMemory.buffers[bufferName];
             wasmBuffer.buffer.set(parameters[paramName]);
-            const val = parameters[paramName][0]
-            this.min = Math.min(val,this.min)
-            this.max = Math.max(val,this.max)
-            console.log(val,this.min,this.max)
             return wasmBuffer.ptr;
         })
 
         this._wasmMemory.buffers.inBuffer.buffer.set(inputs[0][0]) // array index may not be correct
+        // wasm should define a `process` fn that has a type signature:
+        // block_size: number
+        // in_channels: number
+        // out_channels: number
+        // in_ptr: *mut f32 (pointer to begining of in channel buffer)
+        // out_ptr: *mut f32 (pointer to begining of in channel buffer)
+        // ...parameterPtrs: *mut f32[] - all other parameters.
         this._wasm.process(
             BLOCK_SIZE,
             this.inChannels,
