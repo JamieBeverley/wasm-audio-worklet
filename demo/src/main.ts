@@ -68,7 +68,7 @@ class ProfilePage {
             const osc = ac.createOscillator();
             osc.frequency.setValueAtTime(440, ac.currentTime);
             osc.start();
-            const bitCrusher = await BitCrusher.build(ac);
+            const bitCrusher = await BitCrusher.build(ac, true);
 
             const gain = ac.createGain();
             gain.gain.setValueAtTime(0.5, ac.currentTime);
@@ -76,7 +76,7 @@ class ProfilePage {
             osc.connect(bitCrusher);
             bitCrusher.connect(gain);
             gain.connect(ac.destination);
-            
+
 
         })
     }
