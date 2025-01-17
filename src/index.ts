@@ -5,23 +5,25 @@ type ExternalArgs<Other extends []> = [AudioContext, ...Other];
 
 type Args<Other extends [] = []> = {builder: BuilderArgs<Other>, external: ExternalArgs<Other>}
 
+type AudioWorkletConstructor = new (...args: ConstructorParameters<typeof AudioWorkletNode>) => AudioWorkletNode;
+
+
 class WorkletModuleFactory<
     BuildArgs extends Args,
-    Node extends AudioWorkletNode
 > {
 
     private workletPath: string;
     private processorName: ProcessorName
     private wasmPath: string;
     private wasmTimeoutMs: number;
-    private builder: new (...args: BuildArgs["builder"]) => Node;
+    private builder: AudioWorkletConstructor;
 
     constructor(
         workletPath: string,
         processorName: ProcessorName,
         wasmPath: string,
         wasmTimeoutMs: number,
-        builder: new (...args: BuildArgs["builder"]) => Node
+        builder: AudioWorkletConstructor
     ) {
         this.workletPath = workletPath;
         this.processorName = processorName;
@@ -30,11 +32,12 @@ class WorkletModuleFactory<
         this.builder = builder;
     }
 
-    async build(...args: BuildArgs["external"]): Promise<Node> {
-        const [audioContext, ...rest] = args;
+    async build(
+        audioContext: AudioContext, options: AudioWorkletNodeOptions
+    ): Promise<AudioWorkletNode> {
         await this.addWorkletModule(audioContext);
         const instance = new this.builder(
-            audioContext, this.processorName, ...rest
+            audioContext, this.processorName, options
         );
         await this.loadWasm(instance);
         return instance
@@ -44,7 +47,7 @@ class WorkletModuleFactory<
         return await audioContext.audioWorklet.addModule(this.workletPath);
     }
 
-    private async loadWasm(instance: Node) {
+    private async loadWasm(instance: AudioWorkletNode) {
         const response = await window.fetch(this.wasmPath);
         const wasmBytes = await response.arrayBuffer();
 
@@ -107,4 +110,7 @@ const BitCrusher = new WorkletModuleFactory(
     AudioWorkletNode,
 )
 
-export {BufferLooper, BitCrusher};
+
+const BencmarkWorkletPath = new URL('./benchmark.js', import.meta.url).href;
+
+export {BufferLooper, BitCrusher, BencmarkWorkletPath};

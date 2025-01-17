@@ -83,11 +83,12 @@ class WasmProcessor extends AudioWorkletProcessor {
         return []
     }
 
-    constructor() {
+    constructor(profile = false) {
         super();
         this._wasm = undefined;
-        this._wasmMemory = undefined
+        this._wasmMemory = undefined;
         this.port.onmessage = event => this.onmessage(event.data);
+        this.profile = profile;
     }
 
     logBuffers(where = "") {
@@ -161,6 +162,7 @@ class WasmProcessor extends AudioWorkletProcessor {
     }
 
     process(inputs, outputs, parameters) {
+        const start = performance.now();
         if (
             this._wasm === undefined ||
             (inputs[0][0] === undefined)
@@ -194,6 +196,17 @@ class WasmProcessor extends AudioWorkletProcessor {
             ...parameterPtrs,
         );
         outputs[0][0].set(this._wasmMemory.buffers.outBuffer.buffer)
+
+        if (this.profile) {
+            const end = performance.now();
+            this.port.postMessage({
+                'type': 'profile',
+                data: {
+                    block_duration: end - start
+                }
+            })
+        }
+
         return true;
     }
 }
