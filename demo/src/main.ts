@@ -27,7 +27,7 @@ async function initButton() {
 
     const response = await fetch("sound-file.wav");
     const buffer = await ac.decodeAudioData(await response.arrayBuffer());
-    const bufferNode = await BufferLooper.build(ac);
+    const bufferNode = await BufferLooper.build(ac, {processorOptions:{profile:true}});
     bufferNode.loadBuffer(buffer);
     const bitCrusher = await BitCrusher.build(ac);
     const crushParam = bitCrusher.parameters.get('crush');
@@ -56,9 +56,6 @@ button.addEventListener('click', initButton)
 
 
 class ProfilePage {
-    constructor(){
-        this.ac = null;
-    }
 
     renderRuntimeProfilingUI(root:HTMLElement){
         document.createElement('button');
@@ -68,7 +65,9 @@ class ProfilePage {
             const osc = ac.createOscillator();
             osc.frequency.setValueAtTime(440, ac.currentTime);
             osc.start();
-            const bitCrusher = await BitCrusher.build(ac, true);
+            const bitCrusher = await BitCrusher.build(
+                ac, {processorOptions:{profile:true}}
+            );
 
             const gain = ac.createGain();
             gain.gain.setValueAtTime(0.5, ac.currentTime);
@@ -76,14 +75,33 @@ class ProfilePage {
             osc.connect(bitCrusher);
             bitCrusher.connect(gain);
             gain.connect(ac.destination);
+            const size = 100
+            const items:number[] = new Array(size).fill(0);
+            let iter = 0;
+            bitCrusher.port.addEventListener("message", event =>{
+                if(event.data.type === "profile"){
+                    items.push(event.data.data.block_duration);
+                    items.splice(0, 1)
+                    if(iter >= size){
+                        iter = 0;
+                        let min = Infinity;
+                        let max = -Infinity
+                        const avg = items.reduce((acc,x)=>{
+                            if (x>max) max = x;
+                            if (x<min) min = x;
+                            return acc+x
+                        },0)/size;
 
-
+                        console.log("avg:", avg, "min:", min,"max:", max, "head:", items.slice(0,10))
+                    }
+                    iter += 1;
+                }
+            });
         })
+        root.appendChild(button);
     }
 
     async renderWasmProfile(root:HTMLElement){
-        const startButton = document.createElement("button")
-        button.innerText
         // STARTUP PROFILING
         // init identical audio context
         // <time stamp>
@@ -100,6 +118,7 @@ class ProfilePage {
         // RUNTIME PROFILING
         // Play for X frames/seconds/etc...
         // Average or distribution over performance timestamps
+        this.renderRuntimeProfilingUI(root);
 
         // STRESS TEST
         // UI where we can set how many nodes are added:
@@ -113,3 +132,8 @@ class ProfilePage {
     }
 
 }
+
+const profilingUi = new ProfilePage();
+profilingUi.renderRuntimeProfilingUI(
+    document.getElementById("profile") as HTMLTableSectionElement
+);

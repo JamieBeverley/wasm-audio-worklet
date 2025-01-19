@@ -83,12 +83,12 @@ class WasmProcessor extends AudioWorkletProcessor {
         return []
     }
 
-    constructor(profile = false) {
+    constructor(options) {
         super();
         this._wasm = undefined;
         this._wasmMemory = undefined;
         this.port.onmessage = event => this.onmessage(event.data);
-        this.profile = profile;
+        this.profile = options?.processorOptions.profile ?? false;
     }
 
     logBuffers(where = "") {
@@ -162,7 +162,9 @@ class WasmProcessor extends AudioWorkletProcessor {
     }
 
     process(inputs, outputs, parameters) {
-        const start = performance.now();
+        // TODO how to use a better clock here (`performance` api not
+        // available...)
+        const start = Date.now()
         if (
             this._wasm === undefined ||
             (inputs[0][0] === undefined)
@@ -198,7 +200,7 @@ class WasmProcessor extends AudioWorkletProcessor {
         outputs[0][0].set(this._wasmMemory.buffers.outBuffer.buffer)
 
         if (this.profile) {
-            const end = performance.now();
+            const end = Date.now();
             this.port.postMessage({
                 'type': 'profile',
                 data: {

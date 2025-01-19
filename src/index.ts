@@ -1,29 +1,22 @@
 
 type ProcessorName = string;
-type BuilderArgs<Other extends []> = [AudioContext, ProcessorName, ...Other];
-type ExternalArgs<Other extends []> = [AudioContext, ...Other];
-
-type Args<Other extends [] = []> = {builder: BuilderArgs<Other>, external: ExternalArgs<Other>}
-
-type AudioWorkletConstructor = new (...args: ConstructorParameters<typeof AudioWorkletNode>) => AudioWorkletNode;
+type AudioWorkletConstructor<NodeType extends AudioWorkletNode> = new (...args: ConstructorParameters<typeof AudioWorkletNode>) => NodeType;
 
 
-class WorkletModuleFactory<
-    BuildArgs extends Args,
-> {
+class WorkletModuleFactory<Node extends AudioWorkletNode> {
 
     private workletPath: string;
     private processorName: ProcessorName
     private wasmPath: string;
     private wasmTimeoutMs: number;
-    private builder: AudioWorkletConstructor;
+    private builder: AudioWorkletConstructor<Node>;
 
     constructor(
         workletPath: string,
         processorName: ProcessorName,
         wasmPath: string,
         wasmTimeoutMs: number,
-        builder: AudioWorkletConstructor
+        builder: AudioWorkletConstructor<Node>
     ) {
         this.workletPath = workletPath;
         this.processorName = processorName;
@@ -33,8 +26,8 @@ class WorkletModuleFactory<
     }
 
     async build(
-        audioContext: AudioContext, options: AudioWorkletNodeOptions
-    ): Promise<AudioWorkletNode> {
+        audioContext: AudioContext, options: AudioWorkletNodeOptions = {}
+    ): Promise<Node> {
         await this.addWorkletModule(audioContext);
         const instance = new this.builder(
             audioContext, this.processorName, options
@@ -111,6 +104,6 @@ const BitCrusher = new WorkletModuleFactory(
 )
 
 
-const BencmarkWorkletPath = new URL('./benchmark.js', import.meta.url).href;
+const BenchmarkWorkletPath = new URL('./benchmark.js', import.meta.url).href;
 
-export {BufferLooper, BitCrusher, BencmarkWorkletPath};
+export {BufferLooper, BitCrusher, BenchmarkWorkletPath};
