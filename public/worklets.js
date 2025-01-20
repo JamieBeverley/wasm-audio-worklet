@@ -88,7 +88,6 @@ class WasmProcessor extends AudioWorkletProcessor {
         this._wasm = undefined;
         this._wasmMemory = undefined;
         this.port.onmessage = event => this.onmessage(event.data);
-        this.profile = options?.processorOptions.profile ?? false;
     }
 
     logBuffers(where = "") {
@@ -142,7 +141,8 @@ class WasmProcessor extends AudioWorkletProcessor {
     }
 
     messageHandlers = {
-        "init-wasm": this.initWasm
+        "init-wasm": this.initWasm,
+        "profile": this.profileHandler,
     }
 
     onmessage(data) {
@@ -161,10 +161,32 @@ class WasmProcessor extends AudioWorkletProcessor {
         return `__param__${paramName}`
     }
 
+    _profile(iters){
+        // TODO: multi-channels
+        const inputs = new Float32Array(BLOCK_SIZE).fill(0);
+        const outputs = new Float32Array(BLOCK_SIZE).fill(0);
+        const params = this.constructor.parameterDescriptors.reduce((params,param)=>{
+            params[param.name] = new Float32Array(BLOCK_SIZE).fill(0);
+        },{});
+
+        const start = Date.now();
+        for (let iter=0; iter<iters; iter++){
+            if (!this.process(inputs, outputs,params)){
+                throw "stopped processing"
+            }
+        }
+        const end = Date.now();
+        return (end-start)/iters;
+    }
+
+    profileHandler(data){
+        const iters = data?.data.iters ?? 500;
+        console.log("profile for:", iters)
+        const duration = this._profile(iters);
+        this.port.postMessage({type: "profile", data:{duration, iters}})
+    }
+
     process(inputs, outputs, parameters) {
-        // TODO how to use a better clock here (`performance` api not
-        // available...)
-        const start = Date.now()
         if (
             this._wasm === undefined ||
             (inputs[0][0] === undefined)
@@ -198,16 +220,6 @@ class WasmProcessor extends AudioWorkletProcessor {
             ...parameterPtrs,
         );
         outputs[0][0].set(this._wasmMemory.buffers.outBuffer.buffer)
-
-        if (this.profile) {
-            const end = Date.now();
-            this.port.postMessage({
-                'type': 'profile',
-                data: {
-                    block_duration: end - start
-                }
-            })
-        }
 
         return true;
     }

@@ -62,41 +62,44 @@ class ProfilePage {
         button.innerText= "Profile WASM";
         button.addEventListener('click', async () => {
             const ac = new AudioContext();
-            const osc = ac.createOscillator();
-            osc.frequency.setValueAtTime(440, ac.currentTime);
-            osc.start();
+            // const osc = ac.createOscillator();
+            // osc.frequency.setValueAtTime(440, ac.currentTime);
+            // osc.start();
             const bitCrusher = await BitCrusher.build(
                 ac, {processorOptions:{profile:true}}
             );
 
-            const gain = ac.createGain();
-            gain.gain.setValueAtTime(0.5, ac.currentTime);
+            // const gain = ac.createGain();
+            // gain.gain.setValueAtTime(0.5, ac.currentTime);
 
-            osc.connect(bitCrusher);
-            bitCrusher.connect(gain);
-            gain.connect(ac.destination);
-            const size = 100
-            const items:number[] = new Array(size).fill(0);
-            let iter = 0;
+            // osc.connect(bitCrusher);
+            // bitCrusher.connect(gain);
+            // gain.connect(ac.destination);
+            // const size = 100
+            // const items:number[] = new Array(size).fill(0);
+            // let iter = 0;
+            
             bitCrusher.port.addEventListener("message", event =>{
                 if(event.data.type === "profile"){
-                    items.push(event.data.data.block_duration);
-                    items.splice(0, 1)
-                    if(iter >= size){
-                        iter = 0;
-                        let min = Infinity;
-                        let max = -Infinity
-                        const avg = items.reduce((acc,x)=>{
-                            if (x>max) max = x;
-                            if (x<min) min = x;
-                            return acc+x
-                        },0)/size;
+                    console.log("profile data:", event.data.data.duration)
+                    // items.push(event.data.data.duration);
+                    // items.splice(0, 1)
+                    // if(iter >= size){
+                        // iter = 0;
+                        // let min = Infinity;
+                        // let max = -Infinity
+                        // const avg = items.reduce((acc,x)=>{
+                            // if (x>max) max = x;
+                            // if (x<min) min = x;
+                            // return acc+x
+                        // },0)/size;
 
-                        console.log("avg:", avg, "min:", min,"max:", max, "head:", items.slice(0,10))
-                    }
-                    iter += 1;
+                        // console.log("avg:", avg, "min:", min,"max:", max, "head:", items.slice(0,10))
+                    // }
+                    // iter += 1;
                 }
             });
+            bitCrusher.port.postMessage({"type":"profile",data:{iters:500000}})
         })
         root.appendChild(button);
     }
