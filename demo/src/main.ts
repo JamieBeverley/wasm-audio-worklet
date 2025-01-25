@@ -1,6 +1,6 @@
 import './style.css'
 // import {BufferLooper} from 'wasm-audio-worklet';
-import {BufferLooper, BitCrusher} from 'wasm-audio-worklet';
+import {BufferLooper, BitCrusher,BenchmarkWorkletPath, BenchmarkWorkletName} from 'wasm-audio-worklet';
 
 const getLfo = (ac:AudioContext, low:number, high:number, frequency:number) => {
     const lfo = ac.createGain();
@@ -38,6 +38,7 @@ async function initButton() {
     if (crushParam){
         // lfo.connect(crushParam)
         crushParam.linearRampToValueAtTime(32, ac.currentTime + 5)
+        crushParam.linearRampToValueAtTime(0, ac.currentTime + 20)
     } else {
         console.log("crush param not found")
     }
@@ -55,89 +56,129 @@ const globalButton = document.querySelector<HTMLButtonElement>('#play') as HTMLB
 globalButton.addEventListener('click', initButton)
 
 
+class ProfileNode {
+
+    private ac:AudioContext;
+    private nodes:AudioNode[] = [];
+    private makeNode: () => Promise<AudioWorkletNode>;
+    public n:number;
+
+    constructor(
+        ac:AudioContext,
+        n:number,
+        makeNode: () => Promise<AudioWorkletNode>
+    ){
+        this.ac = ac;
+        this.n = n
+        this.makeNode = makeNode;
+    }
+
+    async start(){
+        const osc = this.ac.createOscillator();
+        osc.frequency.setValueAtTime(440, this.ac.currentTime);
+
+        const bcNodes = await Promise.all(Array(this.n).fill(null).map(this.makeNode));
+            // async ()=>{
+            //     const node = await BitCrusher.build(this.ac)
+            //     const crushParam = node.parameters.get('crush')
+            //     crushParam?.setValueAtTime(28, this.ac.currentTime);
+            //     return node
+            // })
+        // );
+        
+        const gain = this.ac.createGain();
+        gain.gain.setValueAtTime(0.5, this.ac.currentTime);
+
+        const endNode = bcNodes.reduce((prevNode:AudioNode, node:AudioNode) =>{
+            prevNode.connect(node);
+            return node;
+        }, osc)
+
+        endNode.connect(gain);
+        gain.connect(this.ac.destination);
+        this.nodes = this.nodes.concat([osc,gain]).concat(bcNodes);
+        
+        osc.start();
+    }
+    
+    stop(){
+        this.nodes.forEach(node=>{
+            node.disconnect();
+        })
+        this.nodes = [];
+    }
+}
+
 class ProfilePage {
 
-    renderRuntimeProfilingUI(root:HTMLElement){
+    private _ac?:AudioContext = undefined;
+
+    get ac (){
+        if (this._ac === undefined){
+            this._ac = new AudioContext();
+        }
+        return this._ac
+    }
+
+    renderStressTestProfilingUI(
+        root:HTMLElement,
+        name:string,
+        makeNode: () => Promise<AudioWorkletNode>,
+    ){
         const button = document.createElement('button');
-        button.innerText= "Profile WASM";
-        button.addEventListener('click', async () => {
-            const ac = new AudioContext();
-            // const osc = ac.createOscillator();
-            // osc.frequency.setValueAtTime(440, ac.currentTime);
-            // osc.start();
-            const bitCrusher = await BitCrusher.build(ac);
+        button.innerText= `Profile WASM (${name})`;
 
-            // const gain = ac.createGain();
-            // gain.gain.setValueAtTime(0.5, ac.currentTime);
+        const stopButton = document.createElement('button');
+        stopButton.innerText= "Stop Profiling";
+        stopButton.setAttribute("disabled","true")
 
-            // osc.connect(bitCrusher);
-            // bitCrusher.connect(gain);
-            // gain.connect(ac.destination);
-            // const size = 100
-            // const items:number[] = new Array(size).fill(0);
-            // let iter = 0;
-            
-            bitCrusher.port.addEventListener("message", event =>{
-                if(event.data.type === "profile"){
-                    console.log("profile data:", event.data.data.duration)
-                    // items.push(event.data.data.duration);
-                    // items.splice(0, 1)
-                    // if(iter >= size){
-                        // iter = 0;
-                        // let min = Infinity;
-                        // let max = -Infinity
-                        // const avg = items.reduce((acc,x)=>{
-                            // if (x>max) max = x;
-                            // if (x<min) min = x;
-                            // return acc+x
-                        // },0)/size;
-
-                        // console.log("avg:", avg, "min:", min,"max:", max, "head:", items.slice(0,10))
-                    // }
-                    // iter += 1;
-                }
-            });
-            setTimeout(()=>{
-                console.log('wait a few secs...')
-                // bitCrusher.port.postMessage({"type":"profile",data:{iters:5}})
-            },2000)
-        })
+        const numberInput = document.createElement('input');
+        numberInput.setAttribute("value", "500");
+        numberInput.setAttribute("type", "number");
         root.appendChild(button);
+        root.appendChild(stopButton);
+        root.appendChild(numberInput);
+
+        button.addEventListener('click', async () => {
+            const nNodes = parseInt(numberInput.value);
+            const profileNode = new ProfileNode(this.ac, nNodes, makeNode)
+            await profileNode.start()
+            console.log("playing...");
+            stopButton.removeAttribute("disabled");
+            const stopFn = () => {
+                profileNode.stop();
+                stopButton.setAttribute("disabled", "true");
+                stopButton.removeEventListener("click", stopFn);
+            }
+            stopButton.addEventListener("click", stopFn);
+        });
+
     }
-
-    async renderWasmProfile(root:HTMLElement){
-        // STARTUP PROFILING
-        // init identical audio context
-        // <time stamp>
-        // wire up each graph
-        //   - create identical osc
-        //   - wire it to the processor
-        //   - pass it to a gain
-        //   - pass it to ac destination
-        // <time stamp> -> log startup time (how important is this? do I care
-        //   about startup time? its kind of negligible)
-        // UI: one button click for wasm version one button for non-wasm one.
-        
-        
-        // RUNTIME PROFILING
-        // Play for X frames/seconds/etc...
-        // Average or distribution over performance timestamps
-        this.renderRuntimeProfilingUI(root);
-
-        // STRESS TEST
-        // UI where we can set how many nodes are added:
-        //   - int number input to set how many
-        //   - button which entirely rebuilds the graph. for(i in number)[ apply crush ]
-        // Empirically, see at what number either one starts to fail
-    }
-
-    async render(root:HTMLElement){
-        await this.renderWasmProfile(root);
-    }
-
 }
 
 const profilingUi = new ProfilePage();
-profilingUi.renderRuntimeProfilingUI(
-    document.getElementById("profile") as HTMLTableSectionElement
+profilingUi.renderStressTestProfilingUI(
+    document.getElementById("profile-wasm") as HTMLDivElement,
+    "WASM",
+    async () => {
+        const node = await BitCrusher.build(profilingUi.ac)
+        const crushParam = node.parameters.get('crush')
+        crushParam?.setValueAtTime(28, profilingUi.ac.currentTime);
+        return node
+    }
+);
+
+profilingUi.renderStressTestProfilingUI(
+    document.getElementById("profile-js") as HTMLDivElement,
+    "JavaScript",
+    async () => {
+
+        await profilingUi.ac.audioWorklet.addModule(BenchmarkWorkletPath);
+        const node = new AudioWorkletNode(
+            profilingUi.ac, BenchmarkWorkletName
+        );
+        const crushParam = node.parameters.get('crush')
+        crushParam?.setValueAtTime(6, profilingUi.ac.currentTime);
+        return node
+    }
 );

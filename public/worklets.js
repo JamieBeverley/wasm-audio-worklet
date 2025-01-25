@@ -174,7 +174,6 @@ class WasmProcessor extends AudioWorkletProcessor {
         },{});
 
         const start = Date.now();
-        console.log("hin", [[inputs]],[[outputs]], params)
         for (let iter=0; iter<iters; iter++){
             if (!this.process([[inputs]], [[outputs]], params)){
                 throw "stopped processing"
@@ -193,18 +192,8 @@ class WasmProcessor extends AudioWorkletProcessor {
     // process(x,y,z){return true}
 
     process(inputs, outputs, parameters) {
-        if (
-            this._wasm === undefined
-        ) {
-            console.log("no wasm", this._wasm)
+        if ((this._wasm === undefined) || (inputs[0][0] === undefined)){
             return true;
-        } else if (inputs[0][0] === undefined){
-            debugger
-            console.log('inputs undefined', inputs)
-            return true;
-        }
-        else{
-            console.log('contd')
         }
 
         // TODO handle k-rate separately? it feels yucky doing a 128 buffer copy

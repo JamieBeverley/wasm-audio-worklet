@@ -10,6 +10,7 @@ class WorkletModuleFactory<Node extends AudioWorkletNode> {
     private wasmPath: string;
     private wasmTimeoutMs: number;
     private builder: AudioWorkletConstructor<Node>;
+    private static wasmBytes:{[k:string]: Promise<ArrayBuffer>} = {};
 
     constructor(
         workletPath: string,
@@ -40,10 +41,21 @@ class WorkletModuleFactory<Node extends AudioWorkletNode> {
         return await audioContext.audioWorklet.addModule(this.workletPath);
     }
 
-    private async loadWasm(instance: AudioWorkletNode) {
-        const response = await window.fetch(this.wasmPath);
-        const wasmBytes = await response.arrayBuffer();
+    private async fetchWasm(): Promise<ArrayBuffer>{
+        let wasmBytes = WorkletModuleFactory.wasmBytes[this.wasmPath];
+        if (wasmBytes !== undefined) return await wasmBytes;
 
+        WorkletModuleFactory.wasmBytes[this.wasmPath] = new Promise<ArrayBuffer>(async res => {
+            const response = await window.fetch(this.wasmPath);
+            const arrayBuffer = await response.arrayBuffer();
+            res(arrayBuffer);
+        });
+        
+        return await WorkletModuleFactory.wasmBytes[this.wasmPath];
+    }
+
+    private async loadWasm(instance: AudioWorkletNode) {
+        const wasmBytes = await this.fetchWasm();
         let initCompletePromise = new Promise<void>((res, rej) => {
             const rejTimeout = setTimeout(() => {
                 rej("Timeout waiting for wasm to initialize")
@@ -59,6 +71,7 @@ class WorkletModuleFactory<Node extends AudioWorkletNode> {
         });
 
         await initCompletePromise;
+    
         return this;
     }
 
@@ -104,6 +117,7 @@ const BitCrusher = new WorkletModuleFactory(
 )
 
 
-const BenchmarkWorkletPath = new URL('./benchmark.js', import.meta.url).href;
+const BenchmarkWorkletPath = new URL('./benchmarks.js', import.meta.url).href;
+const BenchmarkWorkletName = "crush-processor";
 
-export {BufferLooper, BitCrusher, BenchmarkWorkletPath};
+export {BufferLooper, BitCrusher, BenchmarkWorkletPath, BenchmarkWorkletName};
