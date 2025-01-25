@@ -104,7 +104,7 @@ const BufferLooper = new WorkletModuleFactory(
     new URL('./worklets.js', import.meta.url).href,
     "BufferLooper",
     new URL('./buffer_looper.wasm', import.meta.url).href,
-    1000,
+    5000,
     BufferNode,
 )
 
@@ -112,7 +112,7 @@ const BitCrusher = new WorkletModuleFactory(
     new URL('./worklets.js', import.meta.url).href,
     "BitCrush",
     new URL('./reduce_resolution.wasm', import.meta.url).href,
-    1000,
+    5000,
     AudioWorkletNode,
 )
 

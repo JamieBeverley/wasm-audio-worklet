@@ -130,11 +130,9 @@ class WasmProcessor extends AudioWorkletProcessor {
     async initWasm(data) {
         // TODO: consider increasing if pages resizes pretty much always happen
         const memory = new WebAssembly.Memory({ initial: 1 });
-        memory.buffer.byteLength
-        const imports = { env: { memory: memory } };
-
         this._wasm = (await WebAssembly.instantiate(
-            data.wasmBytes, imports
+            data.wasmBytes,
+            // { env: { memory } }
         )).instance.exports;
         this.port.postMessage({ type: "init-wasm-complete" });
         this.alloc_memory();
@@ -161,38 +159,37 @@ class WasmProcessor extends AudioWorkletProcessor {
         return `__param__${paramName}`
     }
 
-    _profile(iters){
+    _profile(iters) {
         // TODO: multi-channels
         const inputs = new Float32Array(BLOCK_SIZE).fill(0);
         const outputs = new Float32Array(BLOCK_SIZE).fill(0);
         const paramDescripts = this.constructor.parameterDescriptors;
-        console.log("this:", this, paramDescripts)
 
-        const params = this.constructor.parameterDescriptors.reduce((params,param)=>{
+        const params = this.constructor.parameterDescriptors.reduce((params, param) => {
             params[param.name] = new Float32Array(BLOCK_SIZE).fill(0);
             return params
-        },{});
+        }, {});
 
         const start = Date.now();
-        for (let iter=0; iter<iters; iter++){
-            if (!this.process([[inputs]], [[outputs]], params)){
+        for (let iter = 0; iter < iters; iter++) {
+            if (!this.process([[inputs]], [[outputs]], params)) {
                 throw "stopped processing"
             }
         }
         const end = Date.now();
-        return (end-start)/iters;
+        return (end - start) / iters;
     }
 
-    profileHandler(data){
+    profileHandler(data) {
         const iters = data?.data.iters ?? 500;
         const duration = this._profile(iters);
-        this.port.postMessage({type: "profile", data:{duration, iters}})
+        this.port.postMessage({ type: "profile", data: { duration, iters } })
     }
 
     // process(x,y,z){return true}
 
     process(inputs, outputs, parameters) {
-        if ((this._wasm === undefined) || (inputs[0][0] === undefined)){
+        if ((this._wasm === undefined) || (inputs[0][0] === undefined)) {
             return true;
         }
 

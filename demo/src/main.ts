@@ -133,7 +133,7 @@ class ProfilePage {
         stopButton.setAttribute("disabled","true")
 
         const numberInput = document.createElement('input');
-        numberInput.setAttribute("value", "500");
+        numberInput.setAttribute("value", "1");
         numberInput.setAttribute("type", "number");
         root.appendChild(button);
         root.appendChild(stopButton);
