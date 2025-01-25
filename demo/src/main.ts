@@ -51,23 +51,21 @@ async function initButton() {
     bitCrusher.connect(ac.destination);
 }
 
-const button = document.querySelector<HTMLButtonElement>('#play') as HTMLButtonElement;
-button.addEventListener('click', initButton)
+const globalButton = document.querySelector<HTMLButtonElement>('#play') as HTMLButtonElement;
+globalButton.addEventListener('click', initButton)
 
 
 class ProfilePage {
 
     renderRuntimeProfilingUI(root:HTMLElement){
-        document.createElement('button');
+        const button = document.createElement('button');
         button.innerText= "Profile WASM";
         button.addEventListener('click', async () => {
             const ac = new AudioContext();
             // const osc = ac.createOscillator();
             // osc.frequency.setValueAtTime(440, ac.currentTime);
             // osc.start();
-            const bitCrusher = await BitCrusher.build(
-                ac, {processorOptions:{profile:true}}
-            );
+            const bitCrusher = await BitCrusher.build(ac);
 
             // const gain = ac.createGain();
             // gain.gain.setValueAtTime(0.5, ac.currentTime);
@@ -99,7 +97,10 @@ class ProfilePage {
                     // iter += 1;
                 }
             });
-            bitCrusher.port.postMessage({"type":"profile",data:{iters:500000}})
+            setTimeout(()=>{
+                console.log('wait a few secs...')
+                // bitCrusher.port.postMessage({"type":"profile",data:{iters:5}})
+            },2000)
         })
         root.appendChild(button);
     }

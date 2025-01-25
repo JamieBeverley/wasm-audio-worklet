@@ -165,13 +165,18 @@ class WasmProcessor extends AudioWorkletProcessor {
         // TODO: multi-channels
         const inputs = new Float32Array(BLOCK_SIZE).fill(0);
         const outputs = new Float32Array(BLOCK_SIZE).fill(0);
+        const paramDescripts = this.constructor.parameterDescriptors;
+        console.log("this:", this, paramDescripts)
+
         const params = this.constructor.parameterDescriptors.reduce((params,param)=>{
             params[param.name] = new Float32Array(BLOCK_SIZE).fill(0);
+            return params
         },{});
 
         const start = Date.now();
+        console.log("hin", [[inputs]],[[outputs]], params)
         for (let iter=0; iter<iters; iter++){
-            if (!this.process(inputs, outputs,params)){
+            if (!this.process([[inputs]], [[outputs]], params)){
                 throw "stopped processing"
             }
         }
@@ -181,17 +186,25 @@ class WasmProcessor extends AudioWorkletProcessor {
 
     profileHandler(data){
         const iters = data?.data.iters ?? 500;
-        console.log("profile for:", iters)
         const duration = this._profile(iters);
         this.port.postMessage({type: "profile", data:{duration, iters}})
     }
 
+    // process(x,y,z){return true}
+
     process(inputs, outputs, parameters) {
         if (
-            this._wasm === undefined ||
-            (inputs[0][0] === undefined)
+            this._wasm === undefined
         ) {
+            console.log("no wasm", this._wasm)
             return true;
+        } else if (inputs[0][0] === undefined){
+            debugger
+            console.log('inputs undefined', inputs)
+            return true;
+        }
+        else{
+            console.log('contd')
         }
 
         // TODO handle k-rate separately? it feels yucky doing a 128 buffer copy
@@ -268,7 +281,6 @@ class BitCrushProcessor extends WasmProcessor {
         ];
     }
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Registering Worklets                                                       //
